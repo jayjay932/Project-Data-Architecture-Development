@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Filtre et nettoie le jeu de données des taux de logements sociaux.
+Préparation du jeu des taux de logements sociaux pour Paris.
 
 Étapes couvertes :
 - lecture du fichier SCSV encodé en CP437
-- filtrage des lignes concernant Paris (commune 75056 et, si présents, les arrondissements 75xxx)
-- normalisation/typage pour produire les couches bronze et silver
-- génération d'un jeu gold prêt à l'emploi (arrondissements) lorsque le référentiel est disponible
+- filtrage sur Paris et ses arrondissements (codes 75xxx)
+- production des couches Bronze/Silver avec colonnes normalisées
+- génération d'une couche Gold (par défaut : data/gold/gold_alice/...)
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ import pandas as pd
 RAW_INPUT = Path("data/bronze/logements-sociaux-dans-les-communes_IDF.csv")
 DEFAULT_BRONZE_OUTPUT = Path("data/bronze/logements_sociaux_paris.csv")
 DEFAULT_SILVER_OUTPUT = Path("data/silver/logements_sociaux_paris.csv")
-DEFAULT_GOLD_OUTPUT = Path("data/gold/logements_sociaux_paris_arrondissements.csv")
+DEFAULT_GOLD_OUTPUT = Path("data/gold/gold_alice/logements_sociaux_paris_arrondissements.csv")
 ARRONDISSEMENTS_REF = Path("data/bronze/arrondissements_paris.csv")
 
 COLUMN_RENAME = {
@@ -40,30 +40,39 @@ COLUMN_RENAME = {
 
 ARRONDISSEMENT_RENAME = {
     "Identifiant séquentiel de l’arrondissement": "arrondissement_id",
+    "Identifiant_arrondissement": "arrondissement_id",
     "Numéro d’arrondissement": "arrondissement_numero",
+    "Numero_arrondissement": "arrondissement_numero",
     "Numéro d’arrondissement INSEE": "code_commune",
+    "Numero_arrondissement_INSEE": "code_commune",
+    "Code_INSEE": "code_commune",
     "Nom de l’arrondissement": "arrondissement_nom_court",
+    "Nom_arrondissement": "arrondissement_nom_court",
     "Nom officiel de l’arrondissement": "arrondissement_nom_officiel",
+    "Nom_officiel_arrondissement": "arrondissement_nom_officiel",
+    "Nom_officiel_de_larrondissement": "arrondissement_nom_officiel",
     "Surface": "surface_m2",
     "Périmètre": "perimetre_m",
+    "Perimetre": "perimetre_m",
     "Geometry X Y": "centroid",
+    "Geometry_X_Y": "centroid",
     "Geometry": "geometry",
 }
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Prépare les couches Bronze/Silver/Gold pour les taux de logements sociaux.")
-    parser.add_argument("--input", default=RAW_INPUT, help="Chemin du fichier SCSV source (défaut : data/bronze/logements-sociaux-dans-les-communes_IDF.csv).")
-    parser.add_argument("--bronze-output", default=DEFAULT_BRONZE_OUTPUT, help="Chemin de sortie pour la couche bronze filtrée (défaut : data/bronze/logements_sociaux_paris.csv).")
-    parser.add_argument("--silver-output", default=DEFAULT_SILVER_OUTPUT, help="Chemin de sortie pour la couche silver (défaut : data/silver/logements_sociaux_paris.csv).")
-    parser.add_argument("--gold-output", default=DEFAULT_GOLD_OUTPUT, help="Chemin de sortie pour la couche gold (défaut : data/gold/logements_sociaux_paris_arrondissements.csv).")
-    parser.add_argument("--arrondissements-ref", default=ARRONDISSEMENTS_REF, help="Référentiel des arrondissements de Paris pour enrichir la couche gold.")
-    parser.add_argument("--skip-gold", action="store_true", help="Ne pas générer la couche gold.")
+    parser = argparse.ArgumentParser(description="Construit Bronze/Silver/Gold pour les taux de logements sociaux (Paris).")
+    parser.add_argument("--input", default=RAW_INPUT, help="Chemin du fichier SCSV source.")
+    parser.add_argument("--bronze-output", default=DEFAULT_BRONZE_OUTPUT, help="Fichier Bronze filtré.")
+    parser.add_argument("--silver-output", default=DEFAULT_SILVER_OUTPUT, help="Fichier Silver nettoyé.")
+    parser.add_argument("--gold-output", default=DEFAULT_GOLD_OUTPUT, help="Fichier Gold final (défaut : data/gold/gold_alice/...).")
+    parser.add_argument("--arrondissements-ref", default=ARRONDISSEMENTS_REF, help="Référentiel des arrondissements de Paris.")
+    parser.add_argument("--skip-gold", action="store_true", help="Ne pas générer la couche Gold.")
     return parser.parse_args()
 
 
 def load_cp437_csv(path: Path) -> pd.DataFrame:
-    """Lit un fichier CSV encodé en CP437 puis le charge avec pandas."""
+    """Lit un CSV encodé en CP437, nécessaire pour récupérer correctement les accents."""
     text = path.read_bytes().decode("cp437").replace("╫", "Î")
     return pd.read_csv(StringIO(text), sep=";", dtype=str)
 
@@ -146,7 +155,7 @@ def load_arrondissements(path: Path) -> pd.DataFrame:
 
 
 def build_gold_df(silver_df: pd.DataFrame, arr_df: pd.DataFrame) -> pd.DataFrame:
-    """Construit un tableau arrondissements + Paris avec le taux de logements sociaux."""
+    """Produit un tableau Paris + arrondissements avec le taux de logements sociaux."""
     silver_df = silver_df.copy()
     arr_df = arr_df.copy()
 
@@ -187,7 +196,6 @@ def build_gold_df(silver_df: pd.DataFrame, arr_df: pd.DataFrame) -> pd.DataFrame
 
     arr_selected = arr_df.reindex(columns=final_cols)
     city_selected = city_df.reindex(columns=final_cols)
-
     gold = pd.concat([city_selected, arr_selected], ignore_index=True)
     return gold
 

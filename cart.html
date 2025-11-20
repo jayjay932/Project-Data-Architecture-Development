@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Paris — Arrondissements (MapLibre)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    html,body { margin:0; height:100%; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
+    #map { height:100%; }
+    .legend {
+      position:absolute; z-index:2; bottom:16px; left:16px; background:#fff; padding:12px 14px;
+      border-radius:12px; box-shadow:0 6px 24px rgba(0,0,0,.12); font-size:13px; line-height:1.4;
+    }
+    .legend h4 { margin:0 0 8px; font-size:14px; }
+    .legend .scale { display:flex; gap:6px; align-items:center; }
+    .legend .swatch { width:18px; height:12px; border-radius:3px; border:1px solid rgba(0,0,0,.1) }
+    .tooltip {
+      position:absolute; z-index:3; pointer-events:none; background:#111; color:#fff; padding:8px 10px;
+      border-radius:10px; font-size:12px; transform:translate(-50%, -120%); white-space:nowrap;
+      box-shadow:0 6px 20px rgba(0,0,0,.25);
+      display:none;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="legend">
+    <h4>Valeur par arrondissement</h4>
+    <div class="scale">
+      <div class="swatch" style="background:#f1eef6"></div> Faible
+      <div class="swatch" style="background:#bdc9e1"></div>
+      <div class="swatch" style="background:#74a9cf"></div>
+      <div class="swatch" style="background:#2b8cbe"></div>
+      <div class="swatch" style="background:#045a8d"></div> Élevée
+    </div>
+  </div>
+  <div id="tooltip" class="tooltip"></div>
+
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script>
+    // --- Données fictives par arrondissement (clé "1".."20") ---
+    const statsParArr = Object.fromEntries(Array.from({length:20}, (_,i)=>[String(i+1), Math.floor(Math.random()*26)]));
+
+    function colorForValue(v) {
+      if (v == null) return "#eee";
+      if (v <= 6)  return "#f1eef6";
+      if (v <= 10) return "#bdc9e1";
+      if (v <= 14) return "#74a9cf";
+      if (v <= 18) return "#2b8cbe";
+      return "#045a8d";
+    }
+
+    // --- Carte MapLibre : fond OSM (aucune clé) ---
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: {
+        "version": 8,
+        "sources": {
+          "osm-raster": {
+            "type": "raster",
+            "tiles": ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+            "tileSize": 256,
+            "attribution": "© OpenStreetMap contributors"
+          }
+        },
+        "layers": [{ "id": "osm-base", "type": "raster", "source": "osm-raster" }]
+      },
+      center: [2.3522, 48.8566],
+      zoom: 11.5
+    });
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+
+    // --- GeoJSON officiel des arrondissements (API Paris Data) ---
+    const ARR_URL = "https://opendata.paris.fr/api/explore/v2.1/catalog/datasets/arrondissements/exports/geojson?lang=fr&timezone=Europe%2FParis";
+
+    // Construit une expression 'match' pour colorer chaque polygone
+    function buildMatchExpression(features) {
+      const expr = ['match', ['to-string', ['get', 'numero']]];
+      for (const f of features) {
+        const numero = String(f.properties.numero);
+        const val = statsParArr[numero];
+        expr.push(numero, colorForValue(val));
+      }
+      expr.push('#eee'); // défaut
+      return expr;
+    }
+
+    let hoverId = null;
+    const tooltip = document.getElementById('tooltip');
+
+    map.on('load', async () => {
+      // Charge le GeoJSON et normalise les champs utiles
+      const res = await fetch(ARR_URL);
+      const gj = await res.json();
+      for (const f of gj.features) {
+        const raw = f.properties.c_ar || f.properties.numero || f.properties.ar || f.properties.num || f.properties.CODE_ARR || f.properties.CODE;
+        f.properties.numero = String(raw).replace(/^0/, '');
+        f.properties.nom_arr = f.properties.l_aroff || f.properties.nom || `Arr. ${f.properties.numero}`;
+      }
+
+      map.addSource('arr', { type: 'geojson', data: gj, promoteId: 'numero' });
+
+      map.addLayer({
+        id: 'arr-fill',
+        type: 'fill',
+        source: 'arr',
+        paint: {
+          'fill-color': buildMatchExpression(gj.features),
+          'fill-opacity': 0.65
+        }
+      });
+
+      map.addLayer({
+        id: 'arr-line',
+        type: 'line',
+        source: 'arr',
+        paint: {
+          'line-color': '#333',
+          'line-width': [
+            'case', ['boolean', ['feature-state', 'hover'], false],
+            2.2, 1.0
+          ]
+        }
+      });
+
+      // Interaction : hover + tooltip
+      map.on('mousemove', 'arr-fill', (e) => {
+        map.getCanvas().style.cursor = 'pointer';
+        const f = e.features[0];
+        if (!f) return;
+
+        if (hoverId !== f.id) {
+          if (hoverId != null) map.setFeatureState({ source: 'arr', id: hoverId }, { hover: false });
+          hoverId = f.id;
+          map.setFeatureState({ source: 'arr', id: hoverId }, { hover: true });
+        }
+
+        const numero = f.properties.numero;
+        const nom = f.properties.nom_arr || `Arr. ${numero}`;
+        const val = statsParArr[numero] ?? 0;
+
+        tooltip.style.left = e.point.x + 'px';
+        tooltip.style.top = e.point.y + 'px';
+        tooltip.style.display = 'block';
+        tooltip.innerHTML = `<strong>${nom}</strong><br/>Valeur : ${val}`;
+      });
+
+      map.on('mouseleave', 'arr-fill', () => {
+        map.getCanvas().style.cursor = '';
+        tooltip.style.display = 'none';
+        if (hoverId != null) {
+          map.setFeatureState({ source: 'arr', id: hoverId }, { hover: false });
+          hoverId = null;
+        }
+      });
+
+      // Emprise de Paris (approx) si jamais le fitBounds auto n'est pas dispo
+      map.fitBounds([[2.224,48.815],[2.469,48.902]], { padding: 40 });
+    });
+  </script>
+</body>
+</html>
