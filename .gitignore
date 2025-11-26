@@ -1,0 +1,34 @@
+# Python environments & artifacts
+venv/
+.venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.pyo
+*.pyd
+
+# Local environment/config secrets
+.env
+.env.*
+*.local
+
+# Node/Web build outputs
+node_modules/
+dist/
+build/
+
+# IDE/editor settings
+.vscode/
+.idea/
+*.code-workspace
+
+# OS/filesystem cruft
+.DS_Store
+Thumbs.db
+
+# Temporary or generated data exports
+tmp/
+*.log
+*.cache
