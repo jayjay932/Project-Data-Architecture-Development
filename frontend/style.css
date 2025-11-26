@@ -151,6 +151,37 @@ body {
     overflow: hidden;
 }
 
+.map-container #map {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.map-info {
+    position: absolute;
+    bottom: 1rem;
+    left: 1rem;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 0.85rem 1rem;
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    color: #2c3e50;
+    max-width: 240px;
+    font-size: 0.9rem;
+}
+
+.map-info h4 {
+    font-size: 1rem;
+    margin-bottom: 0.35rem;
+}
+
+.map-info p {
+    margin: 0;
+    line-height: 1.3;
+}
+
 .map-placeholder {
     text-align: center;
 }

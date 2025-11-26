@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Urban Data Explorer - Paris</title>
     <link rel="stylesheet" href="style.css">
+    <link rel='stylesheet' href='https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.css' />
+    <script src='https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.js'></script>
+    <script src="app.js" defer></script>
 </head>
 <body>
     <div class="header">
@@ -13,9 +16,9 @@
     </div>
 
     <div class="tabs">
-        <button class="tab active" onclick="switchTab('overview')">Vue d'ensemble</button>
-        <button class="tab" onclick="switchTab('comparison')">Comparaison</button>
-        <button class="tab" onclick="switchTab('data')">Données détaillées</button>
+        <button class="tab active" onclick="switchTab('overview', event)">Vue d'ensemble</button>
+        <button class="tab" onclick="switchTab('comparison', event)">Comparaison</button>
+        <button class="tab" onclick="switchTab('data', event)">Données détaillées</button>
     </div>
 
     <div class="container">
@@ -109,14 +112,10 @@
                 <div class="card">
                     <h2><span class="icon">🗺️</span> Carte choroplèthe - Prix/m² par arrondissement</h2>
                     <div class="map-container">
-                        <div class="map-placeholder">
-                            <p style="font-size: 3rem;">🗼</p>
-                            <p><strong>Carte interactive de Paris</strong></p>
-                            <p style="font-size: 0.85rem; margin-top: 0.5rem;">Survol pour voir les détails | Clic pour sélectionner</p>
-                        </div>
-                        <div class="map-controls">
-                            <div>Zoom +/-</div>
-                            <div>Layers 🎨</div>
+                        <div id="map"></div>
+                        <div id="info" class="map-info">
+                            <h4>Arrondissements de Paris</h4>
+                            <p>Survolez un arrondissement</p>
                         </div>
                     </div>
                     <div class="legend">
@@ -176,22 +175,6 @@
             </div>
         </div>
     </div>
-
-    <script>
-        function switchTab(tabName) {
-            // Masquer tous les contenus
-            const contents = document.querySelectorAll('.tab-content');
-            contents.forEach(content => content.classList.remove('active'));
-            
-            // Désactiver tous les onglets
-            const tabs = document.querySelectorAll('.tab');
-            tabs.forEach(tab => tab.classList.remove('active'));
-            
-            // Activer le contenu et l'onglet sélectionnés
-            document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
-        }
-    </script>
 </body>
 </html>
         <!-- ONGLET 2: COMPARAISON -->
