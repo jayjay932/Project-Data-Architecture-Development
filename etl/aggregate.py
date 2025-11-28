@@ -45,7 +45,7 @@ def save_to_gold(df: pd.DataFrame, filename: str) -> None:
 
 def agg_all():
     """
-    wide table with all columns aggregated by arrondissement, year, type_local and nombre_pieces_principales
+    wide table with mesures aggregated by all feature columns
     and enriched with median revenu, logement sociaux and air quality data
     """
     # read data from silver layer
@@ -73,8 +73,21 @@ def agg_all():
     save_to_gold(agg_dvf_data_all, "all_data.csv")
 
 
+def price_year():
+    """
+    Median price per square meter by year
+    """
+    # read data from silver layer
+    cleaned_dvf_data = read_cleaned_csv_files("cleaned_dvf_data.csv")
+
+    # aggregate median price/m2 by year
+    agg_dvf_data_year = cleaned_dvf_data.groupby(["annee"]).agg(prix_m2_median=("prix_m2", "median"),).reset_index()
+    
+    save_to_gold(agg_dvf_data_year, "price_year.csv")
+
+
 def main(): 
-    agg_all()
+    price_year()
 
 
 if __name__ == "__main__":
