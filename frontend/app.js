@@ -18,8 +18,13 @@
             target.classList.add('active');
         }
     };
+    
+    const API_BASE_URL = 'http://localhost:8000';
 
-    document.addEventListener('DOMContentLoaded', initializeMap);
+    document.addEventListener('DOMContentLoaded', () => {
+        initializeMap();
+        initializeMedianPriceFilter();
+    });
 
     function initializeMap() {
         const mapContainer = document.getElementById('map');
@@ -51,7 +56,7 @@
         let hoveredId = null;
 
         map.on('load', () => {
-            fetch('arrondissements.geojson')
+            fetch(`${API_BASE_URL}/api/arrondissements.geojson`)
                 .then((response) => {
                     if (!response.ok) {
                         throw new Error('Impossible de charger le GeoJSON local');
@@ -187,5 +192,43 @@
                     }
                 });
         });
+    }
+
+    function initializeMedianPriceFilter() {
+        const yearSelect = document.getElementById('year-select');
+        const priceValue = document.getElementById('median-price-value');
+
+        if (!yearSelect || !priceValue) {
+            return;
+        }
+
+        const formatPrice = (value) =>
+            new Intl.NumberFormat('fr-FR', {
+                style: 'currency',
+                currency: 'EUR',
+                maximumFractionDigits: 0
+            }).format(value);
+
+        const updatePrice = async (year) => {
+            priceValue.textContent = 'Chargement...';
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/price?year=${encodeURIComponent(year)}`);
+                if (!response.ok) {
+                    const errorPayload = await response.json().catch(() => ({}));
+                    throw new Error(errorPayload.error || `Impossible de récupérer l'année ${year}`);
+                }
+                const data = await response.json();
+                priceValue.textContent = formatPrice(data.median_price_per_sqm);
+            } catch (error) {
+                console.error(error);
+                priceValue.textContent = 'Donnée indisponible';
+            }
+        };
+
+        yearSelect.addEventListener('change', (event) => {
+            updatePrice(event.target.value);
+        });
+
+        updatePrice(yearSelect.value);
     }
 })();
