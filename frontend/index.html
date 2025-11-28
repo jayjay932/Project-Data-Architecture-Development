@@ -12,7 +12,6 @@
 <body>
     <div class="header">
         <h1>Urban Data Explorer - Paris</h1>
-        <p>Explorer, comprendre et comparer les dynamiques du logement au cœur de Paris</p>
     </div>
 
     <div class="tabs">
@@ -25,14 +24,16 @@
         <!-- ONGLET 1: VUE D'ENSEMBLE -->
         <div id="overview" class="tab-content active">
             <div class="filters">
-                <h3>Filtres</h3>
                 <div class="filter-group">
                     <div class="filter-item">
-                        <label>Année</label>
-                        <select>
-                            <option>2024</option>
-                            <option>2023</option>
-                            <option>2022</option>
+                        <label for="year-select">Année</label>
+                        <select id="year-select">
+                            <option value="2020">2020</option>
+                            <option value="2021">2021</option>
+                            <option value="2022">2022</option>
+                            <option value="2023">2023</option>
+                            <option value="2024">2024</option>
+                            <option value="2025" selected>2025</option>
                         </select>
                     </div>
                     <div class="filter-item">
@@ -84,7 +85,7 @@
             <div class="kpi-grid">
                 <div class="kpi-card">
                     <h3>Prix médian/m²</h3>
-                    <div class="kpi-value">11 250€</div>
+                    <div class="kpi-value" id="median-price-value">Chargement...</div>
                     <div class="kpi-change">↑ +3.2% vs 2023</div>
                 </div>
                 <div class="kpi-card">
@@ -106,11 +107,16 @@
                     <h3>Qualité de l'air</h3>
                     <div class="kpi-value">Bon</div>
                     <div class="kpi-change negative"></div>
-                </div>               
+                </div>       
+                <div class="kpi-card">
+                    <h3>Nombre de délits</h3>
+                    <div class="kpi-value">55</div>
+                    <div class="kpi-change negative"></div>
+                </div>                           
             </div>
             <div class="dashboard-grid">
                 <div class="card">
-                    <h2><span class="icon">🗺️</span> Carte choroplèthe - Prix/m² par arrondissement</h2>
+                    <h2>Carte choroplèthe - Prix/m² par arrondissement</h2>
                     <div class="map-container">
                         <div id="map"></div>
                         <div id="info" class="map-info">
