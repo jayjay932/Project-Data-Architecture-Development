@@ -261,15 +261,6 @@ def main():
     air_quality_data = load_air_quality()
     save_to_silver(air_quality_data, "cleaned_air_quality_data.csv")
 
-    # enriched dataset combining DVF, revenu, logements sociaux and air quality
-    all_data = (
-        cleaned_dvf_data.merge(med_revenu_data, on="code_commune", how="left")
-        .merge(logements_sociaux_data, on="code_commune", how="left")
-        .merge(air_quality_data, on="code_commune", how="left")
-    )
-    all_data["tx_logement_sociaux"] = all_data["tx_logement_sociaux"].fillna(0)
-    save_to_silver(all_data, "all_data.csv")
-
     # population data
     pop_insee_data = load_pop_insee()
     save_to_silver(pop_insee_data, "cleaned_pop_insee_data.csv")
