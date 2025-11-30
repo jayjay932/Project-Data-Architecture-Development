@@ -206,6 +206,27 @@ def load_air_quality() -> pd.DataFrame:
     return air_quality
 
 
+def load_pop_insee() -> pd.DataFrame:
+    """Load population data per INSEE code."""
+    path = DIR_BRONZE / "dep75.xlsx"
+    pop_insee = pd.read_excel(path, header=7, sheet_name="Communes")
+    pop_insee = pop_insee.copy()
+    pop_insee["code_commune"] = "75" + pop_insee["Code commune"].astype(str).str.zfill(3)
+    pop_insee = pop_insee.rename(columns={"Population totale": "population"})
+    return pop_insee[["code_commune", "population"]]
+
+
+def load_surface_insee() -> pd.DataFrame:
+    """Load surface area data per INSEE code."""
+    path = DIR_BRONZE / "arrondissements.csv"
+    surface_insee = pd.read_csv(path, sep=";", encoding="utf-8", header=0)
+    surface_insee = surface_insee.copy()
+    surface_insee["code_commune"] = surface_insee["Numéro d’arrondissement INSEE"].astype(str).str.zfill(5)
+    surface_insee["Surface"] = surface_insee["Surface"].astype(float) / 1000000  # convert from m2 to km2
+    surface_insee = surface_insee.rename(columns={"Surface": "superficie_km2"})
+    return surface_insee[["code_commune", "superficie_km2"]]
+
+
 def save_to_silver(df: pd.DataFrame, filename: str) -> None:
     """
     Save cleaned dataframes to CSV files in the silver layer (data/silver_layer/).
@@ -248,6 +269,19 @@ def main():
     )
     all_data["tx_logement_sociaux"] = all_data["tx_logement_sociaux"].fillna(0)
     save_to_silver(all_data, "all_data.csv")
+
+    # population data
+    pop_insee_data = load_pop_insee()
+    save_to_silver(pop_insee_data, "cleaned_pop_insee_data.csv")
+
+    # surface area data
+    surface_insee_data = load_surface_insee()
+    save_to_silver(surface_insee_data, "cleaned_surface_insee_data.csv")
+
+    # dense population calculation (hab/km2)
+    pop_dens_data = pop_insee_data.merge(surface_insee_data, on="code_commune", how="left")
+    pop_dens_data["densite_population"] = pop_dens_data["population"] / pop_dens_data["superficie_km2"]
+    save_to_silver(pop_dens_data[["code_commune", "densite_population"]], "pop_dens_data.csv")
 
 
 if __name__ == "__main__":
