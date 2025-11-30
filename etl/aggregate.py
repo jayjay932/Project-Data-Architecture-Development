@@ -46,27 +46,35 @@ def save_to_gold(df: pd.DataFrame, filename: str) -> None:
 def agg_all():
     """
     wide table with mesures aggregated by all feature columns
-    and enriched with median revenu, logement sociaux and air quality data
+    and enriched with socio-economic data : median revenu, logement sociaux and air quality data
     """
     # read data from silver layer
     cleaned_dvf_data = read_cleaned_csv_files("cleaned_dvf_data.csv")
     med_revenu_data = read_cleaned_csv_files("cleaned_med_revenu_data.csv")
     logements_sociaux_data = read_cleaned_csv_files("cleaned_logement_sociaux_data.csv")
     air_quality_data = read_cleaned_csv_files("cleaned_air_quality_data.csv")
-
+    pop_dens_data = read_cleaned_csv_files("pop_dens_data.csv")
+    
     # aggregate DVF data by arrondissement, year, type_local
-    agg_dvf_data = cleaned_dvf_data.groupby(["code_commune", "annee", "type_local", "nombre_pieces_principales"]
+    agg_dvf_data = cleaned_dvf_data.groupby(["code_commune", "annee"]
         ).agg(
             prix_m2_median=("prix_m2", "median"),
         ).reset_index()
+    
+    # calculate the variation of median price/m2 compared to previous year
+    agg_dvf_data = agg_dvf_data.sort_values(by=["code_commune", "annee"])
+    agg_dvf_data["prix_m2_median_prev_year"] = agg_dvf_data.groupby("code_commune")["prix_m2_median"].shift(1)
+    agg_dvf_data["variation_pct"] = ((agg_dvf_data["prix_m2_median"] - agg_dvf_data["prix_m2_median_prev_year"]) / agg_dvf_data["prix_m2_median_prev_year"]) * 100
 
-    # enrich cleaned DVF data with median revenu, logement sociaux and air quality data
+    # fusion with cleaned DVF socio-economic and demographic data
     agg_dvf_data_all= agg_dvf_data.merge(
             med_revenu_data, on="code_commune", how="left"
         ).merge(
             logements_sociaux_data, on="code_commune", how="left"
         ).merge(
             air_quality_data, on="code_commune", how="left"
+        ).merge(
+            pop_dens_data, on="code_commune", how="left"
         )
     
     
@@ -88,7 +96,8 @@ def price_year():
 
 def main(): 
     price_year()
+    agg_all()
 
-
+    
 if __name__ == "__main__":
     main()
