@@ -37,31 +37,31 @@
                         </select>
                     </div>
                     <div class="filter-item">
-                        <label>Arrondissement</label>
-                        <select>
-                            <option>Tous</option>
-                            <option>1er arrondissement</option>
-                            <option>2ème arrondissement</option>
-                            <option>3ème arrondissement</option>
-                            <option>4ème arrondissement</option>
-                            <option>5ème arrondissement</option>
-                            <option>6ème arrondissement</option>
-                            <option>7ème arrondissement</option>
-                            <option>8ème arrondissement</option>
-                            <option>9ème arrondissement</option>
-                            <option>10ème arrondissement</option>
-                            <option>11ème arrondissement</option>
-                            <option>12ème arrondissement</option>
-                            <option>13ème arrondissement</option>
-                            <option>14ème arrondissement</option>
-                            <option>15ème arrondissement</option>
-                            <option>16ème arrondissement</option>
-                            <option>17ème arrondissement</option>
-                            <option>18ème arrondissement</option>
-                            <option>19ème arrondissement</option>
-                            <option>20ème arrondissement</option>
+                        <label for="arrondissement-select">Arrondissement</label>
+                        <select id="arrondissement-select">
+                            <option value="all">Paris (tous arrondissements)</option>
+                            <option value="75101">1er arrondissement</option>
+                            <option value="75102">2ème arrondissement</option>
+                            <option value="75103">3ème arrondissement</option>
+                            <option value="75104">4ème arrondissement</option>
+                            <option value="75105">5ème arrondissement</option>
+                            <option value="75106">6ème arrondissement</option>
+                            <option value="75107">7ème arrondissement</option>
+                            <option value="75108">8ème arrondissement</option>
+                            <option value="75109">9ème arrondissement</option>
+                            <option value="75110">10ème arrondissement</option>
+                            <option value="75111">11ème arrondissement</option>
+                            <option value="75112">12ème arrondissement</option>
+                            <option value="75113">13ème arrondissement</option>
+                            <option value="75114">14ème arrondissement</option>
+                            <option value="75115">15ème arrondissement</option>
+                            <option value="75116">16ème arrondissement</option>
+                            <option value="75117">17ème arrondissement</option>
+                            <option value="75118">18ème arrondissement</option>
+                            <option value="75119">19ème arrondissement</option>
+                            <option value="75120">20ème arrondissement</option>
                         </select>
-                    </div>                                      
+                    </div>                    
                 </div>
             </div>
 
@@ -69,28 +69,28 @@
                 <div class="kpi-card">
                     <h3>Prix médian/m²</h3>
                     <div class="kpi-value" id="median-price-value">Chargement...</div>
-                    <div class="kpi-change">↑ +3.2% vs 2023</div>
+                    <div class="kpi-change" id="median-price-change"></div>
                 </div>
                 <div class="kpi-card">
                     <h3>Logements sociaux</h3>
-                    <div class="kpi-value">21.4%</div>
-                    <div class="kpi-change">↑ +1.8% vs 2023</div>
+                    <div class="kpi-value" id="social-housing-value">--</div>
+                    <div class="kpi-change" id="social-housing-change"></div>
                 </div>
                 <div class="kpi-card">
                     <h3>Revenu médian</h3>
-                    <div class="kpi-value">22 000 €</div>
+                    <div class="kpi-value" id="median-income-value">--</div>
                     <div class="kpi-change"></div>
                 </div>
                 <div class="kpi-card">
                     <h3>Densité de population</h3>
-                    <div class="kpi-value">10 000 hab/km²</div>
+                    <div class="kpi-value" id="population-density-value">--</div>
                     <div class="kpi-change negative"></div>
                 </div>
                 <div class="kpi-card">
                     <h3>Qualité de l'air</h3>
-                    <div class="kpi-value">Bon</div>
+                    <div class="kpi-value" id="air-quality-value">--</div>
                     <div class="kpi-change negative"></div>
-                </div>                             
+                </div>       
             </div>
             <div class="dashboard-grid">
                 <div class="card">
