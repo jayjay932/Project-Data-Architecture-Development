@@ -45,8 +45,7 @@ def save_to_gold(df: pd.DataFrame, filename: str) -> None:
 
 def agg_all():
     """
-    wide table with mesures aggregated by all feature columns
-    and enriched with socio-economic data : median revenu, logement sociaux and air quality data
+    wide table with mesures aggregated by year and arrondissement
     """
     # read data from silver layer
     cleaned_dvf_data = read_cleaned_csv_files("cleaned_dvf_data.csv")
@@ -54,7 +53,7 @@ def agg_all():
     logements_sociaux_data = read_cleaned_csv_files("cleaned_logement_sociaux_data.csv")
     air_quality_data = read_cleaned_csv_files("cleaned_air_quality_data.csv")
     pop_dens_data = read_cleaned_csv_files("pop_dens_data.csv")
-    
+
     # aggregate DVF data by arrondissement, year, type_local
     agg_dvf_data = cleaned_dvf_data.groupby(["code_commune", "annee"]
         ).agg(
@@ -64,7 +63,15 @@ def agg_all():
     # calculate the variation of median price/m2 compared to previous year
     agg_dvf_data = agg_dvf_data.sort_values(by=["code_commune", "annee"])
     agg_dvf_data["prix_m2_median_prev_year"] = agg_dvf_data.groupby("code_commune")["prix_m2_median"].shift(1)
-    agg_dvf_data["variation_pct"] = ((agg_dvf_data["prix_m2_median"] - agg_dvf_data["prix_m2_median_prev_year"]) / agg_dvf_data["prix_m2_median_prev_year"]) * 100
+    agg_dvf_data["variation"] = (
+        (agg_dvf_data["prix_m2_median"] - agg_dvf_data["prix_m2_median_prev_year"])
+        / agg_dvf_data["prix_m2_median_prev_year"]
+    ) * 100
+    mask_no_previous = agg_dvf_data["prix_m2_median_prev_year"].isna() | (
+        agg_dvf_data["prix_m2_median_prev_year"] == 0
+    )
+    agg_dvf_data.loc[mask_no_previous, "variation"] = pd.NA
+    agg_dvf_data["variation"] = agg_dvf_data["variation"].round(2)
 
     # fusion with cleaned DVF socio-economic and demographic data
     agg_dvf_data_all= agg_dvf_data.merge(
@@ -76,7 +83,6 @@ def agg_all():
         ).merge(
             pop_dens_data, on="code_commune", how="left"
         )
-    
     
     save_to_gold(agg_dvf_data_all, "all_data.csv")
 
