@@ -23,7 +23,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         initializeMap();
-        initializeMedianPriceFilter();
+        initializeDashboardFilters();
     });
 
     function initializeMap() {
@@ -194,41 +194,180 @@
         });
     }
 
-    function initializeMedianPriceFilter() {
+    function initializeDashboardFilters() {
         const yearSelect = document.getElementById('year-select');
-        const priceValue = document.getElementById('median-price-value');
+        const arrondissementSelect = document.getElementById('arrondissement-select');
 
-        if (!yearSelect || !priceValue) {
+        if (!yearSelect || !arrondissementSelect) {
             return;
         }
 
-        const formatPrice = (value) =>
-            new Intl.NumberFormat('fr-FR', {
-                style: 'currency',
-                currency: 'EUR',
-                maximumFractionDigits: 0
-            }).format(value);
+        const state = {
+            year: yearSelect.value,
+            arrondissement: arrondissementSelect.value || 'all'
+        };
 
-        const updatePrice = async (year) => {
-            priceValue.textContent = 'Chargement...';
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/price?year=${encodeURIComponent(year)}`);
-                if (!response.ok) {
-                    const errorPayload = await response.json().catch(() => ({}));
-                    throw new Error(errorPayload.error || `Impossible de récupérer l'année ${year}`);
-                }
-                const data = await response.json();
-                priceValue.textContent = formatPrice(data.median_price_per_sqm);
-            } catch (error) {
-                console.error(error);
-                priceValue.textContent = 'Donnée indisponible';
-            }
+        const refreshMetrics = () => {
+            loadMetrics(state.year, state.arrondissement);
         };
 
         yearSelect.addEventListener('change', (event) => {
-            updatePrice(event.target.value);
+            state.year = event.target.value;
+            refreshMetrics();
         });
 
-        updatePrice(yearSelect.value);
+        arrondissementSelect.addEventListener('change', (event) => {
+            state.arrondissement = event.target.value || 'all';
+            refreshMetrics();
+        });
+
+        refreshMetrics();
+    }
+
+    async function loadMetrics(year, arrondissement) {
+        setMetricsLoading();
+        try {
+            const url = new URL(`${API_BASE_URL}/api/metrics`);
+            url.searchParams.set('year', year);
+            url.searchParams.set('arrondissement', arrondissement);
+            const response = await fetch(url);
+            if (!response.ok) {
+                const errorPayload = await response.json().catch(() => ({}));
+                throw new Error(errorPayload.error || 'Réponse serveur invalide');
+            }
+            const data = await response.json();
+            renderMetrics(data);
+        } catch (error) {
+            console.error(error);
+            renderMetricsError();
+        }
+    }
+
+    function setMetricsLoading() {
+        const ids = [
+            'median-price-value',
+            'social-housing-value',
+            'median-income-value',
+            'population-density-value',
+            'air-quality-value'
+        ];
+        ids.forEach((id) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = 'Chargement...';
+            }
+        });
+        const changeElement = document.getElementById('median-price-change');
+        if (changeElement) {
+            changeElement.textContent = '';
+            changeElement.classList.remove('negative');
+        }
+    }
+
+    function renderMetrics(data) {
+        updatePriceCard(data);
+        updateSocialHousingCard(data);
+        updateIncomeCard(data);
+        updateDensityCard(data);
+        updateAirQualityCard(data);
+    }
+
+    function renderMetricsError() {
+        const ids = [
+            'median-price-value',
+            'social-housing-value',
+            'median-income-value',
+            'population-density-value',
+            'air-quality-value'
+        ];
+        ids.forEach((id) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = 'Donnée indisponible';
+            }
+        });
+        const changeElement = document.getElementById('median-price-change');
+        if (changeElement) {
+            changeElement.textContent = 'Comparaison indisponible';
+            changeElement.classList.add('negative');
+        }
+    }
+
+    function updatePriceCard(data) {
+        const priceValue = document.getElementById('median-price-value');
+        if (priceValue) {
+            priceValue.textContent = formatCurrency(data.prix_m2_median);
+        }
+
+        const changeElement = document.getElementById('median-price-change');
+        if (!changeElement) {
+            return;
+        }
+
+        if (typeof data.variation === 'number' && Number.isFinite(data.variation)) {
+            const symbol = data.variation > 0 ? '↑' : data.variation < 0 ? '↓' : '→';
+            const sign = data.variation > 0 ? '+' : '';
+            changeElement.textContent = `${symbol} ${sign}${data.variation.toFixed(2)}% vs ${data.year - 1}`;
+            changeElement.classList.toggle('negative', data.variation < 0);
+        } else {
+            changeElement.textContent = 'Comparaison indisponible';
+            changeElement.classList.remove('negative');
+        }
+    }
+
+    function updateSocialHousingCard(data) {
+        const element = document.getElementById('social-housing-value');
+        if (element) {
+            element.textContent = formatPercent(data.tx_logement_sociaux);
+        }
+    }
+
+    function updateIncomeCard(data) {
+        const element = document.getElementById('median-income-value');
+        if (element) {
+            element.textContent = formatCurrency(data.revenu_median);
+        }
+    }
+
+    function updateDensityCard(data) {
+        const element = document.getElementById('population-density-value');
+        if (element) {
+            element.textContent = formatDensity(data.densite_population);
+        }
+    }
+
+    function updateAirQualityCard(data) {
+        const element = document.getElementById('air-quality-value');
+        if (element) {
+            element.textContent = data.air_quality_global || 'N/A';
+        }
+    }
+
+    function formatCurrency(value) {
+        if (typeof value !== 'number' || Number.isNaN(value)) {
+            return 'N/A';
+        }
+        return new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: 'EUR',
+            maximumFractionDigits: 0
+        }).format(value);
+    }
+
+    function formatPercent(value) {
+        if (typeof value !== 'number' || Number.isNaN(value)) {
+            return 'N/A';
+        }
+        return `${value.toFixed(1)}%`;
+    }
+
+    function formatDensity(value) {
+        if (typeof value !== 'number' || Number.isNaN(value)) {
+            return 'N/A';
+        }
+        const formatted = new Intl.NumberFormat('fr-FR', {
+            maximumFractionDigits: 0
+        }).format(value);
+        return `${formatted} hab/km²`;
     }
 })();
