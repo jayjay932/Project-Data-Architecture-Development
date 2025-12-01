@@ -1,23 +1,92 @@
 from __future__ import annotations
 
 import csv
-from dataclasses import dataclass
+from collections import Counter
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List, Optional, Tuple
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, abort, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 
-DATA_PATH = Path(__file__).resolve().parents[1] / "data" / "gold_layer" / "price_year.csv"
+DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "gold_layer"
+PRICE_DATA_PATH = DATA_DIR / "price_year.csv"
+ALL_DATA_PATH = DATA_DIR / "all_data.csv"
 FRONTEND_DIR = Path(__file__).resolve().parents[1] / "frontend"
 ARRONDISSEMENTS_FILE = FRONTEND_DIR / "arrondissements.geojson"
+
+ARRONDISSEMENT_LABELS = [
+    "1er arrondissement",
+    "2e arrondissement",
+    "3e arrondissement",
+    "4e arrondissement",
+    "5e arrondissement",
+    "6e arrondissement",
+    "7e arrondissement",
+    "8e arrondissement",
+    "9e arrondissement",
+    "10e arrondissement",
+    "11e arrondissement",
+    "12e arrondissement",
+    "13e arrondissement",
+    "14e arrondissement",
+    "15e arrondissement",
+    "16e arrondissement",
+    "17e arrondissement",
+    "18e arrondissement",
+    "19e arrondissement",
+    "20e arrondissement",
+]
+ARRONDISSEMENTS = {
+    f"751{i:02d}": label for i, label in enumerate(ARRONDISSEMENT_LABELS, start=1)
+}
+ARROND_LABEL_TO_CODE = {label.lower(): code for code, label in ARRONDISSEMENTS.items()}
+CITY_LABEL = "Paris (tous arrondissements)"
 
 
 @dataclass(frozen=True)
 class PriceEntry:
     year: int
     median_price_per_sqm: float
+
+
+@dataclass(frozen=True)
+class MetricEntry:
+    code_commune: str
+    year: int
+    prix_m2_median: Optional[float]
+    prix_m2_median_prev_year: Optional[float]
+    variation: Optional[float]
+    revenu_median: Optional[float]
+    tx_logement_sociaux: Optional[float]
+    air_quality_global: Optional[str]
+    densite_population: Optional[float]
+    no2: Optional[float]
+    o3: Optional[float]
+    pm10: Optional[float]
+    qual_no2: Optional[str]
+    qual_o3: Optional[str]
+    qual_pm10: Optional[str]
+
+
+def parse_optional_float(value: Optional[str]) -> Optional[float]:
+    if value is None:
+        return None
+    cleaned = str(value).strip().replace(",", ".")
+    if not cleaned:
+        return None
+    try:
+        return float(cleaned)
+    except ValueError:
+        return None
+
+
+def parse_optional_string(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    cleaned = value.strip()
+    return cleaned or None
 
 
 def load_price_data(csv_path: Path) -> Dict[int, PriceEntry]:
@@ -37,9 +106,153 @@ def load_price_data(csv_path: Path) -> Dict[int, PriceEntry]:
     return prices
 
 
+def load_all_metrics(csv_path: Path) -> Dict[Tuple[str, int], MetricEntry]:
+    if not csv_path.exists():
+        raise FileNotFoundError(f"Gold-layer dataset introuvable: {csv_path}")
+
+    metrics: Dict[Tuple[str, int], MetricEntry] = {}
+    with csv_path.open("r", encoding="utf-8") as csv_file:
+        reader = csv.DictReader(csv_file, delimiter=";")
+        for row in reader:
+            code_commune = row["code_commune"].zfill(5)
+            try:
+                year = int(row["annee"])
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"Année invalide pour {code_commune}: {row}") from exc
+
+            entry = MetricEntry(
+                code_commune=code_commune,
+                year=year,
+                prix_m2_median=parse_optional_float(row.get("prix_m2_median")),
+                prix_m2_median_prev_year=parse_optional_float(
+                    row.get("prix_m2_median_prev_year")
+                ),
+                variation=parse_optional_float(row.get("variation")),
+                revenu_median=parse_optional_float(row.get("revenu_median")),
+                tx_logement_sociaux=parse_optional_float(row.get("tx_logement_sociaux")),
+                air_quality_global=parse_optional_string(row.get("air_quality_global")),
+                densite_population=parse_optional_float(row.get("densite_population")),
+                no2=parse_optional_float(row.get("no2")),
+                o3=parse_optional_float(row.get("o3")),
+                pm10=parse_optional_float(row.get("pm10")),
+                qual_no2=parse_optional_string(row.get("qual_no2")),
+                qual_o3=parse_optional_string(row.get("qual_o3")),
+                qual_pm10=parse_optional_string(row.get("qual_pm10")),
+            )
+            metrics[(code_commune, year)] = entry
+    return metrics
+
+
+def safe_mean(values: List[Optional[float]]) -> Optional[float]:
+    valid = [value for value in values if value is not None]
+    if not valid:
+        return None
+    return sum(valid) / len(valid)
+
+
+def most_common(values: List[Optional[str]]) -> Optional[str]:
+    filtered = [value for value in values if value]
+    if not filtered:
+        return None
+    return Counter(filtered).most_common(1)[0][0]
+
+
+def compute_price_variations(prices: Dict[int, PriceEntry]) -> Dict[int, Optional[float]]:
+    variations: Dict[int, Optional[float]] = {}
+    for year in sorted(prices.keys()):
+        prev_year = year - 1
+        current = prices[year]
+        previous = prices.get(prev_year)
+        if not previous or previous.median_price_per_sqm == 0:
+            variations[year] = None
+            continue
+        change = (
+            (current.median_price_per_sqm - previous.median_price_per_sqm)
+            / previous.median_price_per_sqm
+        ) * 100
+        variations[year] = round(change, 2)
+    return variations
+
+
+def build_city_metrics(
+    metrics: Dict[Tuple[str, int], MetricEntry],
+    prices: Dict[int, PriceEntry],
+) -> Dict[int, MetricEntry]:
+    per_year: Dict[int, List[MetricEntry]] = {}
+    for entry in metrics.values():
+        per_year.setdefault(entry.year, []).append(entry)
+
+    price_variations = compute_price_variations(prices)
+    city_metrics: Dict[int, MetricEntry] = {}
+
+    for year, entries in per_year.items():
+        city_metrics[year] = MetricEntry(
+            code_commune="all",
+            year=year,
+            prix_m2_median=prices.get(year).median_price_per_sqm
+            if prices.get(year)
+            else None,
+            prix_m2_median_prev_year=prices.get(year - 1).median_price_per_sqm
+            if prices.get(year - 1)
+            else None,
+            variation=price_variations.get(year),
+            revenu_median=safe_mean([entry.revenu_median for entry in entries]),
+            tx_logement_sociaux=safe_mean(
+                [entry.tx_logement_sociaux for entry in entries]
+            ),
+            air_quality_global=most_common(
+                [entry.air_quality_global for entry in entries]
+            ),
+            densite_population=safe_mean(
+                [entry.densite_population for entry in entries]
+            ),
+            no2=safe_mean([entry.no2 for entry in entries]),
+            o3=safe_mean([entry.o3 for entry in entries]),
+            pm10=safe_mean([entry.pm10 for entry in entries]),
+            qual_no2=most_common([entry.qual_no2 for entry in entries]),
+            qual_o3=most_common([entry.qual_o3 for entry in entries]),
+            qual_pm10=most_common([entry.qual_pm10 for entry in entries]),
+        )
+    return city_metrics
+
+
+def arrondissement_number_to_code(number: int) -> str:
+    return f"751{number:02d}"
+
+
+def normalize_arrondissement_code(raw_value: str) -> Optional[str]:
+    if not raw_value:
+        return None
+    lowered = raw_value.strip().lower()
+    if lowered in {"all", "tous", "tout", "paris"}:
+        return "all"
+
+    if raw_value in ARRONDISSEMENTS:
+        return raw_value
+
+    if lowered in ARROND_LABEL_TO_CODE:
+        return ARROND_LABEL_TO_CODE[lowered]
+
+    digits = "".join(ch for ch in raw_value if ch.isdigit())
+    if digits:
+        if len(digits) >= 5:
+            candidate = digits[-5:]
+            if candidate in ARRONDISSEMENTS:
+                return candidate
+        try:
+            number = int(digits[-2:]) if len(digits) > 2 else int(digits)
+        except ValueError:
+            return None
+        if 1 <= number <= len(ARRONDISSEMENTS):
+            return arrondissement_number_to_code(number)
+    return None
+
+
 app = Flask(__name__)
 CORS(app)
-PRICE_DATA = load_price_data(DATA_PATH)
+PRICE_DATA = load_price_data(PRICE_DATA_PATH)
+METRICS_BY_KEY = load_all_metrics(ALL_DATA_PATH)
+CITY_METRICS = build_city_metrics(METRICS_BY_KEY, PRICE_DATA)
 
 
 @app.route("/api/price", methods=["GET"])
@@ -56,8 +269,47 @@ def get_price_by_year():
         {
             "year": entry.year,
             "median_price_per_sqm": entry.median_price_per_sqm,
+            "currency": "EUR",
         }
     )
+
+
+@app.route("/api/metrics", methods=["GET"])
+def get_metrics():
+    year_param = request.args.get("year", type=int)
+    arrondissement_param = request.args.get("arrondissement") or request.args.get(
+        "code_commune"
+    )
+
+    if year_param is None or arrondissement_param is None:
+        return jsonify({"error": "Paramètres 'year' et 'arrondissement' requis."}), 400
+
+    normalized_code = normalize_arrondissement_code(arrondissement_param)
+    if normalized_code is None:
+        return jsonify({"error": f"Arrondissement inconnu: {arrondissement_param}"}), 400
+
+    if normalized_code == "all":
+        entry = CITY_METRICS.get(year_param)
+    else:
+        entry = METRICS_BY_KEY.get((normalized_code, year_param))
+
+    if not entry:
+        return jsonify({"error": "Aucune donnée trouvée pour ces paramètres."}), 404
+
+    payload = asdict(entry)
+    payload["label"] = (
+        CITY_LABEL if normalized_code == "all" else ARRONDISSEMENTS.get(entry.code_commune)
+    )
+    return jsonify(payload)
+
+
+@app.route("/api/arrondissements", methods=["GET"])
+def list_arrondissements():
+    arr_list = [
+        {"code_commune": code, "label": label}
+        for code, label in ARRONDISSEMENTS.items()
+    ]
+    return jsonify(arr_list)
 
 
 @app.route("/api/arrondissements.geojson", methods=["GET"])
@@ -70,6 +322,24 @@ def get_arrondissements_geojson():
         path=ARRONDISSEMENTS_FILE.name,
         mimetype="application/geo+json",
     )
+
+
+@app.route("/", defaults={"path": "index.html"})
+@app.route("/<path:path>")
+def serve_frontend(path: str):
+    target = (FRONTEND_DIR / path).resolve()
+    try:
+        target.relative_to(FRONTEND_DIR.resolve())
+    except ValueError:
+        abort(404)
+
+    if target.is_dir():
+        target = target / "index.html"
+    if not target.exists():
+        abort(404)
+
+    relative_path = target.relative_to(FRONTEND_DIR).as_posix()
+    return send_from_directory(FRONTEND_DIR, relative_path)
 
 
 if __name__ == "__main__":
