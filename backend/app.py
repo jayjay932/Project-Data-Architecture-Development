@@ -68,6 +68,17 @@ class MetricEntry:
     qual_no2: Optional[str]
     qual_o3: Optional[str]
     qual_pm10: Optional[str]
+    transactions_total: Optional[int]
+    transactions_studio_t1: Optional[int]
+    transactions_t2: Optional[int]
+    transactions_t3: Optional[int]
+    transactions_t4: Optional[int]
+    transactions_t5_plus: Optional[int]
+    part_studio_t1: Optional[float]
+    part_t2: Optional[float]
+    part_t3: Optional[float]
+    part_t4: Optional[float]
+    part_t5_plus: Optional[float]
 
 
 def parse_optional_float(value: Optional[str]) -> Optional[float]:
@@ -87,6 +98,18 @@ def parse_optional_string(value: Optional[str]) -> Optional[str]:
         return None
     cleaned = value.strip()
     return cleaned or None
+
+
+def parse_optional_int(value: Optional[str]) -> Optional[int]:
+    if value is None:
+        return None
+    cleaned = str(value).strip()
+    if not cleaned:
+        return None
+    try:
+        return int(float(cleaned))
+    except ValueError:
+        return None
 
 
 def load_price_data(csv_path: Path) -> Dict[int, PriceEntry]:
@@ -138,6 +161,17 @@ def load_all_metrics(csv_path: Path) -> Dict[Tuple[str, int], MetricEntry]:
                 qual_no2=parse_optional_string(row.get("qual_no2")),
                 qual_o3=parse_optional_string(row.get("qual_o3")),
                 qual_pm10=parse_optional_string(row.get("qual_pm10")),
+                transactions_total=parse_optional_int(row.get("transactions_total")),
+                transactions_studio_t1=parse_optional_int(row.get("transactions_studio_t1")),
+                transactions_t2=parse_optional_int(row.get("transactions_t2")),
+                transactions_t3=parse_optional_int(row.get("transactions_t3")),
+                transactions_t4=parse_optional_int(row.get("transactions_t4")),
+                transactions_t5_plus=parse_optional_int(row.get("transactions_t5_plus")),
+                part_studio_t1=parse_optional_float(row.get("part_studio_t1")),
+                part_t2=parse_optional_float(row.get("part_t2")),
+                part_t3=parse_optional_float(row.get("part_t3")),
+                part_t4=parse_optional_float(row.get("part_t4")),
+                part_t5_plus=parse_optional_float(row.get("part_t5_plus")),
             )
             metrics[(code_commune, year)] = entry
     return metrics
@@ -148,6 +182,13 @@ def safe_mean(values: List[Optional[float]]) -> Optional[float]:
     if not valid:
         return None
     return sum(valid) / len(valid)
+
+
+def safe_sum(values: List[Optional[float]]) -> Optional[float]:
+    valid = [value for value in values if value is not None]
+    if not valid:
+        return None
+    return sum(valid)
 
 
 def most_common(values: List[Optional[str]]) -> Optional[str]:
@@ -186,6 +227,25 @@ def build_city_metrics(
     city_metrics: Dict[int, MetricEntry] = {}
 
     for year, entries in per_year.items():
+        total_transactions = safe_sum([entry.transactions_total for entry in entries])
+        total_studio = safe_sum([entry.transactions_studio_t1 for entry in entries])
+        total_t2 = safe_sum([entry.transactions_t2 for entry in entries])
+        total_t3 = safe_sum([entry.transactions_t3 for entry in entries])
+        total_t4 = safe_sum([entry.transactions_t4 for entry in entries])
+        total_t5_plus = safe_sum([entry.transactions_t5_plus for entry in entries])
+
+        def as_int(value: Optional[float]) -> Optional[int]:
+            if value is None:
+                return None
+            return int(round(value))
+
+        def compute_share(count: Optional[float]) -> Optional[float]:
+            if total_transactions is None or not total_transactions:
+                return None
+            if count is None:
+                return 0.0
+            return round((count / total_transactions) * 100, 2)
+
         city_metrics[year] = MetricEntry(
             code_commune="all",
             year=year,
@@ -212,6 +272,17 @@ def build_city_metrics(
             qual_no2=most_common([entry.qual_no2 for entry in entries]),
             qual_o3=most_common([entry.qual_o3 for entry in entries]),
             qual_pm10=most_common([entry.qual_pm10 for entry in entries]),
+            transactions_total=as_int(total_transactions),
+            transactions_studio_t1=as_int(total_studio),
+            transactions_t2=as_int(total_t2),
+            transactions_t3=as_int(total_t3),
+            transactions_t4=as_int(total_t4),
+            transactions_t5_plus=as_int(total_t5_plus),
+            part_studio_t1=compute_share(total_studio),
+            part_t2=compute_share(total_t2),
+            part_t3=compute_share(total_t3),
+            part_t4=compute_share(total_t4),
+            part_t5_plus=compute_share(total_t5_plus),
         )
     return city_metrics
 
@@ -301,6 +372,58 @@ def get_metrics():
         CITY_LABEL if normalized_code == "all" else ARRONDISSEMENTS.get(entry.code_commune)
     )
     return jsonify(payload)
+
+
+@app.route("/api/typology", methods=["GET"])
+def get_typology_breakdown():
+    year_param = request.args.get("year", type=int)
+    arrondissement_param = request.args.get("arrondissement") or request.args.get(
+        "code_commune"
+    )
+
+    if year_param is None or arrondissement_param is None:
+        return jsonify({"error": "Paramètres 'year' et 'arrondissement' requis."}), 400
+
+    normalized_code = normalize_arrondissement_code(arrondissement_param)
+    if normalized_code is None:
+        return jsonify({"error": f"Arrondissement inconnu: {arrondissement_param}"}), 400
+
+    if normalized_code == "all":
+        entry = CITY_METRICS.get(year_param)
+    else:
+        entry = METRICS_BY_KEY.get((normalized_code, year_param))
+
+    if not entry:
+        return jsonify({"error": "Aucune donnée trouvée pour ces paramètres."}), 404
+
+    label = CITY_LABEL if normalized_code == "all" else ARRONDISSEMENTS.get(entry.code_commune)
+    segments_config = [
+        ("studio_t1", "Studios / T1", entry.part_studio_t1, entry.transactions_studio_t1),
+        ("t2", "T2", entry.part_t2, entry.transactions_t2),
+        ("t3", "T3", entry.part_t3, entry.transactions_t3),
+        ("t4", "T4", entry.part_t4, entry.transactions_t4),
+        ("t5_plus", "T5 et +", entry.part_t5_plus, entry.transactions_t5_plus),
+    ]
+
+    segments = []
+    for segment_id, segment_label, value, count in segments_config:
+        segments.append(
+            {
+                "id": segment_id,
+                "label": segment_label,
+                "value": float(value) if value is not None else 0.0,
+                "count": int(count) if count is not None else 0,
+            }
+        )
+
+    return jsonify(
+        {
+            "label": label,
+            "year": year_param,
+            "total_transactions": int(entry.transactions_total or 0),
+            "segments": segments,
+        }
+    )
 
 
 @app.route("/api/arrondissements", methods=["GET"])
