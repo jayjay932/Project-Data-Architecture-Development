@@ -20,28 +20,46 @@
     };
     
     const API_BASE_URL = 'http://localhost:8000';
+    const metricsCache = new Map();
+    const typologyCache = new Map();
+    const TYPOLOGY_SEGMENTS = [
+        { id: 'studio_t1', label: 'Studios / T1' },
+        { id: 't2', label: 'T2' },
+        { id: 't3', label: 'T3' },
+        { id: 't4', label: 'T4' },
+        { id: 't5_plus', label: 'T5 et +' }
+    ];
+    const TYPOLOGY_COLOR_MAP = {
+        studio_t1: '#5DA5DA',
+        t2: '#FAA43A',
+        t3: '#60BD68',
+        t4: '#B276B2',
+        t5_plus: '#F17CB0'
+    };
+    const TYPOLOGY_FALLBACK_COLORS = ['#5DA5DA', '#FAA43A', '#60BD68', '#B276B2', '#F17CB0'];
+    const typologyChartState = {
+        canvas: null,
+        tooltip: null,
+        wrapper: null,
+        arcs: [],
+        centerX: 0,
+        centerY: 0,
+        radius: 0
+    };
 
     document.addEventListener('DOMContentLoaded', () => {
         initializeMap();
         initializeDashboardFilters();
+        initializeTypologyChartInteractions();
     });
 
     function initializeMap() {
-        const mapContainer = document.getElementById('map');
-        const infoBox = document.getElementById('info');
+        const mapElement = document.getElementById('map');
+        const mapPopup = document.getElementById('map-popup');
 
-        if (!mapContainer) {
-            console.warn('Le conteneur de carte est introuvable.');
+        if (!mapElement || !mapPopup) {
+            console.warn('Le conteneur de carte ou le popup est introuvable.');
             return;
-        }
-
-        const defaultInfo = `
-            <h4>Arrondissements de Paris</h4>
-            <p>Survolez un arrondissement</p>
-        `;
-
-        if (infoBox) {
-            infoBox.innerHTML = defaultInfo;
         }
 
         const map = new maplibregl.Map({
@@ -54,6 +72,11 @@
         map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
 
         let hoveredId = null;
+        let lastHoveredCode = null;
+        let activePopupCode = null;
+        let infoRequestCounter = 0;
+        let lastPopupPosition = null;
+        const yearSelect = document.getElementById('year-select');
 
         map.on('load', () => {
             fetch(`${API_BASE_URL}/api/arrondissements.geojson`)
@@ -136,11 +159,21 @@
                         );
 
                         const props = e.features[0].properties;
-                        if (infoBox) {
-                            infoBox.innerHTML = `
-                                <h4>${props.libgeo || 'Arrondissement'}</h4>
-                                <p><strong>Valeur:</strong> ${props.value ? props.value.toFixed(2) : 'N/A'}</p>
-                            `;
+                        const arrondissementCode = formatArrondissementCode(props?.c_arinsee);
+                        if (!arrondissementCode || !yearSelect) {
+                            return;
+                        }
+
+                        if (arrondissementCode !== lastHoveredCode) {
+                            lastHoveredCode = arrondissementCode;
+                            activePopupCode = arrondissementCode;
+                            void updateMapPopupWithMetrics({
+                                arrondissementCode,
+                                year: yearSelect.value,
+                                point: e.point
+                            });
+                        } else {
+                            positionPopup(e.point);
                         }
 
                         map.getCanvas().style.cursor = 'pointer';
@@ -154,44 +187,177 @@
                             );
                         }
                         hoveredId = null;
-
-                        if (infoBox) {
-                            infoBox.innerHTML = defaultInfo;
-                        }
+                        lastHoveredCode = null;
+                        activePopupCode = null;
+                        infoRequestCounter += 1;
+                        hidePopup();
 
                         map.getCanvas().style.cursor = '';
                     });
 
                     map.on('click', 'arrondissements-fill', (e) => {
-                        if (!e.features || !e.features.length) {
+                        if (!e.features || !e.features.length || !yearSelect) {
                             return;
                         }
 
-                        const feature = e.features[0];
-                        const bounds = new maplibregl.LngLatBounds();
-
-                        if (feature.geometry.type === 'Polygon') {
-                            feature.geometry.coordinates[0].forEach((coord) => bounds.extend(coord));
-                        } else if (feature.geometry.type === 'MultiPolygon') {
-                            feature.geometry.coordinates.forEach((polygon) => {
-                                polygon[0].forEach((coord) => bounds.extend(coord));
-                            });
+                        const props = e.features[0].properties;
+                        const arrondissementCode = formatArrondissementCode(props?.c_arinsee);
+                        if (!arrondissementCode) {
+                            return;
                         }
 
-                        map.fitBounds(bounds, { padding: 40, duration: 800 });
+                        lastHoveredCode = arrondissementCode;
+                        activePopupCode = arrondissementCode;
+                        void updateMapPopupWithMetrics({
+                            arrondissementCode,
+                            year: yearSelect.value,
+                            point: e.point
+                        });
                     });
                 })
                 .catch((error) => {
                     console.error(error);
-                    if (infoBox) {
-                        infoBox.innerHTML = `
-                            <h4>Erreur</h4>
-                            <p>${error.message}</p>
-                            <p style="font-size: 12px;">Assurez-vous que le fichier arrondissements.geojson est dans le même répertoire.</p>
-                        `;
-                    }
                 });
         });
+
+        if (yearSelect) {
+            yearSelect.addEventListener('change', () => {
+                if (activePopupCode) {
+                    void updateMapPopupWithMetrics({
+                        arrondissementCode: activePopupCode,
+                        year: yearSelect.value,
+                        point: lastPopupPosition
+                    });
+                }
+            });
+        }
+
+        function positionPopup(point) {
+            if (!mapPopup || !point) {
+                return;
+            }
+
+            const mapWidth = mapElement.clientWidth;
+            const mapHeight = mapElement.clientHeight;
+            const popupWidth = mapPopup.offsetWidth || 0;
+            const popupHeight = mapPopup.offsetHeight || 0;
+            const margin = 10;
+            const pointerOffset = 12;
+
+            let desiredLeft = point.x - popupWidth / 2;
+            let desiredTop = point.y - popupHeight - pointerOffset;
+
+            if (desiredTop < margin) {
+                desiredTop = point.y + pointerOffset;
+            }
+
+            if (desiredTop + popupHeight > mapHeight - margin) {
+                desiredTop = Math.max(margin, mapHeight - popupHeight - margin);
+            }
+
+            if (desiredLeft < margin) {
+                desiredLeft = margin;
+            }
+
+            if (desiredLeft + popupWidth > mapWidth - margin) {
+                desiredLeft = Math.max(margin, mapWidth - popupWidth - margin);
+            }
+
+            mapPopup.style.left = `${desiredLeft}px`;
+            mapPopup.style.top = `${desiredTop}px`;
+            lastPopupPosition = clonePoint(point);
+        }
+
+        function showPopup(content, point) {
+            if (!mapPopup) {
+                return;
+            }
+
+            mapPopup.innerHTML = content;
+            mapPopup.style.display = 'block';
+            mapPopup.style.visibility = 'hidden';
+
+            if (point) {
+                positionPopup(point);
+            } else if (lastPopupPosition) {
+                positionPopup(lastPopupPosition);
+            }
+
+            mapPopup.style.visibility = 'visible';
+        }
+
+        function hidePopup() {
+            if (!mapPopup) {
+                return;
+            }
+            mapPopup.style.display = 'none';
+            mapPopup.style.visibility = 'hidden';
+            mapPopup.innerHTML = '';
+            lastPopupPosition = null;
+        }
+
+        function clonePoint(point) {
+            if (!point) {
+                return null;
+            }
+            return { x: point.x, y: point.y };
+        }
+
+        async function updateMapPopupWithMetrics({ arrondissementCode, year, point }) {
+            if (!arrondissementCode || !year) {
+                return;
+            }
+
+            const pointer = point ? clonePoint(point) : lastPopupPosition;
+            const requestId = ++infoRequestCounter;
+            showPopup(
+                `
+                    <h4>Chargement...</h4>
+                    <p>Arrondissement ${arrondissementCode}</p>
+                `,
+                pointer
+            );
+
+            try {
+                const metrics = await fetchMetrics(year, arrondissementCode);
+                if (requestId !== infoRequestCounter) {
+                    return;
+                }
+                showPopup(buildMetricsInfoPanel(metrics), pointer);
+            } catch (error) {
+                console.error(error);
+                if (requestId === infoRequestCounter) {
+                    showPopup(
+                        `
+                            <h4>Arrondissement ${arrondissementCode}</h4>
+                            <p>Données indisponibles pour ${year}.</p>
+                        `,
+                        pointer
+                    );
+                }
+            }
+        }
+
+        function formatArrondissementCode(raw) {
+            if (raw === undefined || raw === null) {
+                return null;
+            }
+            return String(raw).padStart(5, '0');
+        }
+
+        function buildMetricsInfoPanel(metrics) {
+            return `
+                <h4>${metrics.label || 'Arrondissement'}</h4>
+                <ul class="map-info-list">
+                    <li><strong>Année :</strong> ${metrics.year}</li>
+                    <li><strong>Prix/m² médian :</strong> ${formatCurrency(metrics.prix_m2_median)}</li>
+                    <li><strong>Taux logements sociaux :</strong> ${formatPercent(metrics.tx_logement_sociaux)}</li>
+                    <li><strong>Revenu médian :</strong> ${formatCurrency(metrics.revenu_median)}</li>
+                    <li><strong>Densité population :</strong> ${formatDensity(metrics.densite_population)}</li>
+                    <li><strong>Qualité de l'air :</strong> ${metrics.air_quality_global || 'N/A'}</li>
+                </ul>
+            `;
+        }
     }
 
     function initializeDashboardFilters() {
@@ -207,40 +373,59 @@
             arrondissement: arrondissementSelect.value || 'all'
         };
 
-        const refreshMetrics = () => {
+        const refreshDashboardData = () => {
             loadMetrics(state.year, state.arrondissement);
+            loadTypology(state.year, state.arrondissement);
         };
 
         yearSelect.addEventListener('change', (event) => {
             state.year = event.target.value;
-            refreshMetrics();
+            refreshDashboardData();
         });
 
         arrondissementSelect.addEventListener('change', (event) => {
             state.arrondissement = event.target.value || 'all';
-            refreshMetrics();
+            refreshDashboardData();
         });
 
-        refreshMetrics();
+        refreshDashboardData();
     }
 
     async function loadMetrics(year, arrondissement) {
         setMetricsLoading();
         try {
-            const url = new URL(`${API_BASE_URL}/api/metrics`);
-            url.searchParams.set('year', year);
-            url.searchParams.set('arrondissement', arrondissement);
-            const response = await fetch(url);
-            if (!response.ok) {
-                const errorPayload = await response.json().catch(() => ({}));
-                throw new Error(errorPayload.error || 'Réponse serveur invalide');
-            }
-            const data = await response.json();
+            const data = await fetchMetrics(year, arrondissement);
             renderMetrics(data);
         } catch (error) {
             console.error(error);
             renderMetricsError();
         }
+    }
+
+    async function loadTypology(year, arrondissement) {
+        setTypologyLoading('Chargement...');
+        try {
+            const data = await fetchTypology(year, arrondissement);
+            renderTypologyChart(data);
+        } catch (error) {
+            console.error(error);
+            renderTypologyError('Donnée indisponible');
+        }
+    }
+
+    function initializeTypologyChartInteractions() {
+        const canvas = document.getElementById('typology-chart');
+        const tooltip = document.getElementById('typology-tooltip');
+        if (!canvas || !tooltip) {
+            return;
+        }
+
+        typologyChartState.canvas = canvas;
+        typologyChartState.tooltip = tooltip;
+        typologyChartState.wrapper = canvas.parentElement;
+
+        canvas.addEventListener('mousemove', handleTypologyHover);
+        canvas.addEventListener('mouseleave', hideTypologyTooltip);
     }
 
     function setMetricsLoading() {
@@ -291,6 +476,170 @@
             changeElement.textContent = 'Comparaison indisponible';
             changeElement.classList.add('negative');
         }
+    }
+
+    function setTypologyLoading(message) {
+        const loadingElement = document.getElementById('typology-loading');
+        const canvas = document.getElementById('typology-chart');
+        const legend = document.getElementById('typology-legend');
+        hideTypologyTooltip();
+        typologyChartState.arcs = [];
+        typologyChartState.centerX = 0;
+        typologyChartState.centerY = 0;
+        typologyChartState.radius = 0;
+        if (legend) {
+            legend.innerHTML = '';
+        }
+        if (loadingElement) {
+            loadingElement.style.display = 'flex';
+            loadingElement.textContent = message;
+        }
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        if (legend) {
+            legend.innerHTML = '';
+        }
+    }
+
+    function renderTypologyError(message) {
+        setTypologyLoading(message);
+    }
+
+    function renderTypologyChart(data) {
+        const canvas = document.getElementById('typology-chart');
+        const legend = document.getElementById('typology-legend');
+        const loadingElement = document.getElementById('typology-loading');
+
+        if (!canvas) {
+            return;
+        }
+
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        hideTypologyTooltip();
+        if (legend) {
+            legend.innerHTML = '';
+        }
+        typologyChartState.canvas = typologyChartState.canvas || canvas;
+        typologyChartState.wrapper = typologyChartState.wrapper || canvas.parentElement;
+        typologyChartState.tooltip = typologyChartState.tooltip || document.getElementById('typology-tooltip');
+
+        const apiSegments = Array.isArray(data?.segments) ? data.segments : [];
+        const normalizedSegments = TYPOLOGY_SEGMENTS.map((segmentMeta) => {
+            const match = apiSegments.find((segment) => segment.id === segmentMeta.id) || {};
+            return {
+                id: segmentMeta.id,
+                label: segmentMeta.label,
+                value: typeof match.value === 'number' ? match.value : 0,
+                count: typeof match.count === 'number' ? match.count : 0
+            };
+        });
+
+        const drawableSegments = normalizedSegments.filter((segment) => segment.value > 0);
+        const totalValue = drawableSegments.reduce((sum, segment) => sum + segment.value, 0);
+
+        if (!totalValue) {
+            renderTypologyError('Aucune donnée pour cette sélection');
+            return;
+        }
+
+        if (loadingElement) {
+            loadingElement.style.display = 'none';
+        }
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = Math.min(centerX, centerY) - 12;
+        let currentAngle = -Math.PI / 2;
+
+        typologyChartState.centerX = centerX;
+        typologyChartState.centerY = centerY;
+        typologyChartState.radius = radius;
+        typologyChartState.arcs = [];
+
+        drawableSegments.forEach((segment, index) => {
+            const color = TYPOLOGY_COLOR_MAP[segment.id] || TYPOLOGY_FALLBACK_COLORS[index % TYPOLOGY_FALLBACK_COLORS.length];
+            const sliceAngle = (segment.value / totalValue) * Math.PI * 2;
+            const startAngle = currentAngle;
+            const endAngle = currentAngle + sliceAngle;
+
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+
+            const midAngle = startAngle + sliceAngle / 2;
+            const canDrawInside = segment.value >= 12;
+            if (canDrawInside) {
+                drawInnerLabel(ctx, segment, color, centerX, centerY, radius, midAngle);
+            }
+
+            typologyChartState.arcs.push({
+                id: segment.id,
+                label: segment.label,
+                value: segment.value,
+                count: segment.count,
+                color,
+                startAngle: normalizeAngle(startAngle),
+                endAngle: normalizeAngle(endAngle)
+            });
+
+            currentAngle = endAngle;
+        });
+
+        if (legend) {
+            normalizedSegments.forEach((segment, index) => {
+                const color = TYPOLOGY_COLOR_MAP[segment.id] || TYPOLOGY_FALLBACK_COLORS[index % TYPOLOGY_FALLBACK_COLORS.length];
+                const item = document.createElement('li');
+                item.innerHTML = `
+                    <span class="legend-color" style="background: ${color};"></span>
+                    ${segment.label}
+                `;
+                legend.appendChild(item);
+            });
+        }
+    }
+
+    async function fetchMetrics(year, arrondissement) {
+        const cacheKey = `${year}-${arrondissement}`;
+        if (metricsCache.has(cacheKey)) {
+            return metricsCache.get(cacheKey);
+        }
+
+        const url = new URL(`${API_BASE_URL}/api/metrics`);
+        url.searchParams.set('year', year);
+        url.searchParams.set('arrondissement', arrondissement);
+        const response = await fetch(url);
+        if (!response.ok) {
+            const errorPayload = await response.json().catch(() => ({}));
+            throw new Error(errorPayload.error || 'Réponse serveur invalide');
+        }
+        const data = await response.json();
+        metricsCache.set(cacheKey, data);
+        return data;
+    }
+
+    async function fetchTypology(year, arrondissement) {
+        const cacheKey = `${year}-${arrondissement}`;
+        if (typologyCache.has(cacheKey)) {
+            return typologyCache.get(cacheKey);
+        }
+
+        const url = new URL(`${API_BASE_URL}/api/typology`);
+        url.searchParams.set('year', year);
+        url.searchParams.set('arrondissement', arrondissement);
+        const response = await fetch(url);
+        if (!response.ok) {
+            const errorPayload = await response.json().catch(() => ({}));
+            throw new Error(errorPayload.error || 'Réponse serveur invalide');
+        }
+        const data = await response.json();
+        typologyCache.set(cacheKey, data);
+        return data;
     }
 
     function updatePriceCard(data) {
@@ -369,5 +718,166 @@
             maximumFractionDigits: 0
         }).format(value);
         return `${formatted} hab/km²`;
+    }
+
+    function normalizeAngle(angle) {
+        const twoPi = Math.PI * 2;
+        let normalized = angle % twoPi;
+        if (normalized < 0) {
+            normalized += twoPi;
+        }
+        return normalized;
+    }
+
+    function isAngleWithinArc(angle, arc) {
+        if (arc.startAngle <= arc.endAngle) {
+            return angle >= arc.startAngle && angle < arc.endAngle;
+        }
+        return angle >= arc.startAngle || angle < arc.endAngle;
+    }
+
+    function handleTypologyHover(event) {
+        const { canvas, tooltip, wrapper, arcs, centerX, centerY, radius } = typologyChartState;
+        if (!canvas || !tooltip || !wrapper || !arcs.length) {
+            hideTypologyTooltip();
+            return;
+        }
+
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        const dx = x - centerX;
+        const dy = y - centerY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance > radius || distance < 10) {
+            hideTypologyTooltip();
+            return;
+        }
+
+        const angle = normalizeAngle(Math.atan2(dy, dx));
+        const segment = arcs.find((arc) => isAngleWithinArc(angle, arc));
+        if (!segment) {
+            hideTypologyTooltip();
+            return;
+        }
+
+        showTypologyTooltip(segment, event);
+    }
+
+    function showTypologyTooltip(segment, event) {
+        const { tooltip, wrapper } = typologyChartState;
+        if (!tooltip || !wrapper) {
+            return;
+        }
+        tooltip.innerHTML = `
+            <p><strong>${segment.label}</strong></p>
+            <p>Part : ${segment.value.toFixed(1)}%</p>
+            <p>Transactions : ${segment.count}</p>
+        `;
+        const rect = wrapper.getBoundingClientRect();
+        const offsetX = event.clientX - rect.left;
+        const offsetY = event.clientY - rect.top;
+        tooltip.style.left = `${offsetX}px`;
+        tooltip.style.top = `${offsetY}px`;
+        tooltip.style.display = 'block';
+    }
+
+    function hideTypologyTooltip() {
+        if (typologyChartState.tooltip) {
+            typologyChartState.tooltip.style.display = 'none';
+        }
+    }
+
+    function drawInnerLabel(ctx, segment, color, centerX, centerY, radius, angle) {
+        const label = segment.label;
+        const percent = `${segment.value.toFixed(1)}%`;
+        const textRadius = radius * 0.55;
+        const textX = centerX + Math.cos(angle) * textRadius;
+        const textY = centerY + Math.sin(angle) * textRadius;
+
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const labelFont = 'bold 13px "Inter", sans-serif';
+        const percentFont = '600 12px "Inter", sans-serif';
+        ctx.font = labelFont;
+        const labelWidth = ctx.measureText(label).width;
+        ctx.font = percentFont;
+        const percentWidth = ctx.measureText(percent).width;
+        const boxWidth = Math.max(labelWidth, percentWidth) + 28;
+        const boxHeight = 38;
+
+        drawRoundedRect(ctx, textX - boxWidth / 2, textY - boxHeight / 2, boxWidth, boxHeight, 12, 'rgba(255,255,255,0.94)', `rgba(0,0,0,0.12)`);
+        ctx.fillStyle = '#1f2933';
+        ctx.font = labelFont;
+        ctx.fillText(label, textX, textY - 8);
+        ctx.font = percentFont;
+        ctx.fillText(percent, textX, textY + 8);
+        ctx.restore();
+    }
+
+    function drawOuterLabel(ctx, segment, color, centerX, centerY, radius, angle) {
+        const percent = `${segment.value.toFixed(1)}%`;
+        const label = segment.label;
+        const lineStartX = centerX + Math.cos(angle) * radius;
+        const lineStartY = centerY + Math.sin(angle) * radius;
+        const lineMidX = centerX + Math.cos(angle) * (radius + 16);
+        const lineMidY = centerY + Math.sin(angle) * (radius + 16);
+        const horizontalX = lineMidX + (Math.cos(angle) >= 0 ? 18 : -18);
+
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(lineStartX, lineStartY);
+        ctx.lineTo(lineMidX, lineMidY);
+        ctx.lineTo(horizontalX, lineMidY);
+        ctx.stroke();
+
+        const textAlignRight = Math.cos(angle) < 0;
+        const boxWidth = Math.max(
+            ctx.measureText(label).width,
+            ctx.measureText(percent).width
+        ) + 20;
+        const boxHeight = 34;
+        const boxX = textAlignRight ? horizontalX - boxWidth - 6 : horizontalX + 6;
+        const boxY = lineMidY - boxHeight / 2;
+        drawRoundedRect(ctx, boxX, boxY, boxWidth, boxHeight, 10, 'rgba(255,255,255,0.97)', color);
+
+        ctx.fillStyle = '#1f2933';
+        ctx.textAlign = textAlignRight ? 'right' : 'left';
+        ctx.textBaseline = 'middle';
+        ctx.font = 'bold 13px \"Inter\", sans-serif';
+        const textX = textAlignRight ? boxX + boxWidth - 10 : boxX + 10;
+        ctx.fillText(label, textX, boxY + 12);
+
+        ctx.font = '600 12px \"Inter\", sans-serif';
+        ctx.fillText(percent, textX, boxY + boxHeight - 12);
+        ctx.restore();
+    }
+
+    function drawRoundedRect(ctx, x, y, width, height, radius, fillStyle, strokeStyle) {
+        const r = Math.min(radius, width / 2, height / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + width - r, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+        ctx.lineTo(x + width, y + height - r);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+        ctx.lineTo(x + r, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+        if (fillStyle) {
+            ctx.fillStyle = fillStyle;
+            ctx.fill();
+        }
+        if (strokeStyle) {
+            ctx.strokeStyle = strokeStyle;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
     }
 })();

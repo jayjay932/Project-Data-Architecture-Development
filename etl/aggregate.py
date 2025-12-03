@@ -54,11 +54,61 @@ def agg_all():
     air_quality_data = read_cleaned_csv_files("cleaned_air_quality_data.csv")
     pop_dens_data = read_cleaned_csv_files("pop_dens_data.csv")
 
-    # aggregate DVF data by arrondissement, year, type_local
+    # aggregate DVF data by arrondissement and year
     agg_dvf_data = cleaned_dvf_data.groupby(["code_commune", "annee"]
         ).agg(
             prix_m2_median=("prix_m2", "median"),
         ).reset_index()
+
+    # compute housing typology mix based on nombre_pieces_principales
+    def categorize_unit(piece_count):
+        try:
+            count = int(piece_count)
+        except (TypeError, ValueError):
+            return "studio_t1"
+        if count <= 1:
+            return "studio_t1"
+        if count == 2:
+            return "t2"
+        if count == 3:
+            return "t3"
+        if count == 4:
+            return "t4"
+        return "t5_plus"
+
+    size_mix = cleaned_dvf_data[
+        ["code_commune", "annee", "nombre_pieces_principales"]
+    ].copy()
+    size_mix["categorie_taille"] = size_mix["nombre_pieces_principales"].apply(categorize_unit)
+
+    typology_counts = (
+        size_mix.groupby(["code_commune", "annee", "categorie_taille"]).size().unstack(fill_value=0)
+    )
+
+    category_columns = ["studio_t1", "t2", "t3", "t4", "t5_plus"]
+    for column in category_columns:
+        if column not in typology_counts.columns:
+            typology_counts[column] = 0
+
+    rename_map = {
+        "studio_t1": "transactions_studio_t1",
+        "t2": "transactions_t2",
+        "t3": "transactions_t3",
+        "t4": "transactions_t4",
+        "t5_plus": "transactions_t5_plus",
+    }
+    typology_counts = typology_counts.reset_index().rename(columns=rename_map)
+
+    transaction_columns = list(rename_map.values())
+    typology_counts["transactions_total"] = typology_counts[transaction_columns].sum(axis=1)
+
+    total_series = typology_counts["transactions_total"].replace(0, pd.NA)
+    share_values = typology_counts[transaction_columns].div(total_series, axis=0) * 100
+    share_values = share_values.round(2)
+    share_values.columns = [col.replace("transactions_", "part_") for col in transaction_columns]
+    typology_counts = pd.concat([typology_counts, share_values], axis=1)
+
+    agg_dvf_data = agg_dvf_data.merge(typology_counts, on=["code_commune", "annee"], how="left")
     
     # calculate the variation of median price/m2 compared to previous year
     agg_dvf_data = agg_dvf_data.sort_values(by=["code_commune", "annee"])

@@ -94,13 +94,10 @@
             </div>
             <div class="dashboard-grid">
                 <div class="card">
-                    <h2>Carte choroplèthe - Prix/m² par arrondissement</h2>
+                    <h2>Prix/m² par arrondissement</h2>
                     <div class="map-container">
                         <div id="map"></div>
-                        <div id="info" class="map-info">
-                            <h4>Arrondissements de Paris</h4>
-                            <p>Survolez un arrondissement</p>
-                        </div>
+                        <div id="map-popup" class="map-popup"></div>
                     </div>
                     <div class="legend">
                         <div class="legend-item">
@@ -123,12 +120,13 @@
                 </div>
 
                 <div class="card">
-                    <h2><span class="icon">🏢</span> Typologie des logements</h2>
-                    <div class="chart-container">
-                        <div style="text-align: center;">
-                            <p style="font-size: 2rem;">📊</p>
-                            <p><strong>Graphique en camembert</strong></p>
-                            <p style="font-size: 0.85rem; margin-top: 0.5rem;">Studios: 35% | T2: 40% | T3+: 25%</p>
+                    <h2>Répartition du parc selon type de logement</h2>
+                    <div class="chart-container typology-chart">
+                        <ul id="typology-legend" class="typology-legend typology-legend-inline"></ul>
+                        <div class="typology-canvas-wrapper">
+                            <canvas id="typology-chart" width="260" height="260" aria-label="Répartition des logements"></canvas>
+                            <div id="typology-loading" class="chart-placeholder">Chargement...</div>
+                            <div id="typology-tooltip" class="chart-tooltip" role="tooltip"></div>
                         </div>
                     </div>
                 </div>
