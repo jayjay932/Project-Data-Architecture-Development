@@ -43,6 +43,19 @@ ARRONDISSEMENTS = {
 }
 ARROND_LABEL_TO_CODE = {label.lower(): code for code, label in ARRONDISSEMENTS.items()}
 CITY_LABEL = "Paris (tous arrondissements)"
+SURFACE_SEGMENTS = [
+    ("lt_20", "< 20 m²", "part_surface_lt_20", "transactions_surface_lt_20"),
+    ("bt_20_40", "20 - 40 m²", "part_surface_bt_20_40", "transactions_surface_bt_20_40"),
+    ("bt_40_60", "40 - 60 m²", "part_surface_bt_40_60", "transactions_surface_bt_40_60"),
+    ("bt_60_80", "60 - 80 m²", "part_surface_bt_60_80", "transactions_surface_bt_60_80"),
+    (
+        "bt_80_120",
+        "80 - 120 m²",
+        "part_surface_bt_80_120",
+        "transactions_surface_bt_80_120",
+    ),
+    ("gt_120", "> 120 m²", "part_surface_gt_120", "transactions_surface_gt_120"),
+]
 
 
 @dataclass(frozen=True)
@@ -79,6 +92,18 @@ class MetricEntry:
     part_t3: Optional[float]
     part_t4: Optional[float]
     part_t5_plus: Optional[float]
+    transactions_surface_lt_20: Optional[int]
+    transactions_surface_bt_20_40: Optional[int]
+    transactions_surface_bt_40_60: Optional[int]
+    transactions_surface_bt_60_80: Optional[int]
+    transactions_surface_bt_80_120: Optional[int]
+    transactions_surface_gt_120: Optional[int]
+    part_surface_lt_20: Optional[float]
+    part_surface_bt_20_40: Optional[float]
+    part_surface_bt_40_60: Optional[float]
+    part_surface_bt_60_80: Optional[float]
+    part_surface_bt_80_120: Optional[float]
+    part_surface_gt_120: Optional[float]
 
 
 def parse_optional_float(value: Optional[str]) -> Optional[float]:
@@ -172,6 +197,30 @@ def load_all_metrics(csv_path: Path) -> Dict[Tuple[str, int], MetricEntry]:
                 part_t3=parse_optional_float(row.get("part_t3")),
                 part_t4=parse_optional_float(row.get("part_t4")),
                 part_t5_plus=parse_optional_float(row.get("part_t5_plus")),
+                transactions_surface_lt_20=parse_optional_int(
+                    row.get("transactions_surface_lt_20")
+                ),
+                transactions_surface_bt_20_40=parse_optional_int(
+                    row.get("transactions_surface_bt_20_40")
+                ),
+                transactions_surface_bt_40_60=parse_optional_int(
+                    row.get("transactions_surface_bt_40_60")
+                ),
+                transactions_surface_bt_60_80=parse_optional_int(
+                    row.get("transactions_surface_bt_60_80")
+                ),
+                transactions_surface_bt_80_120=parse_optional_int(
+                    row.get("transactions_surface_bt_80_120")
+                ),
+                transactions_surface_gt_120=parse_optional_int(
+                    row.get("transactions_surface_gt_120")
+                ),
+                part_surface_lt_20=parse_optional_float(row.get("part_surface_lt_20")),
+                part_surface_bt_20_40=parse_optional_float(row.get("part_surface_bt_20_40")),
+                part_surface_bt_40_60=parse_optional_float(row.get("part_surface_bt_40_60")),
+                part_surface_bt_60_80=parse_optional_float(row.get("part_surface_bt_60_80")),
+                part_surface_bt_80_120=parse_optional_float(row.get("part_surface_bt_80_120")),
+                part_surface_gt_120=parse_optional_float(row.get("part_surface_gt_120")),
             )
             metrics[(code_commune, year)] = entry
     return metrics
@@ -233,6 +282,24 @@ def build_city_metrics(
         total_t3 = safe_sum([entry.transactions_t3 for entry in entries])
         total_t4 = safe_sum([entry.transactions_t4 for entry in entries])
         total_t5_plus = safe_sum([entry.transactions_t5_plus for entry in entries])
+        total_surface_lt_20 = safe_sum(
+            [entry.transactions_surface_lt_20 for entry in entries]
+        )
+        total_surface_bt_20_40 = safe_sum(
+            [entry.transactions_surface_bt_20_40 for entry in entries]
+        )
+        total_surface_bt_40_60 = safe_sum(
+            [entry.transactions_surface_bt_40_60 for entry in entries]
+        )
+        total_surface_bt_60_80 = safe_sum(
+            [entry.transactions_surface_bt_60_80 for entry in entries]
+        )
+        total_surface_bt_80_120 = safe_sum(
+            [entry.transactions_surface_bt_80_120 for entry in entries]
+        )
+        total_surface_gt_120 = safe_sum(
+            [entry.transactions_surface_gt_120 for entry in entries]
+        )
 
         def as_int(value: Optional[float]) -> Optional[int]:
             if value is None:
@@ -283,6 +350,18 @@ def build_city_metrics(
             part_t3=compute_share(total_t3),
             part_t4=compute_share(total_t4),
             part_t5_plus=compute_share(total_t5_plus),
+            transactions_surface_lt_20=as_int(total_surface_lt_20),
+            transactions_surface_bt_20_40=as_int(total_surface_bt_20_40),
+            transactions_surface_bt_40_60=as_int(total_surface_bt_40_60),
+            transactions_surface_bt_60_80=as_int(total_surface_bt_60_80),
+            transactions_surface_bt_80_120=as_int(total_surface_bt_80_120),
+            transactions_surface_gt_120=as_int(total_surface_gt_120),
+            part_surface_lt_20=compute_share(total_surface_lt_20),
+            part_surface_bt_20_40=compute_share(total_surface_bt_20_40),
+            part_surface_bt_40_60=compute_share(total_surface_bt_40_60),
+            part_surface_bt_60_80=compute_share(total_surface_bt_60_80),
+            part_surface_bt_80_120=compute_share(total_surface_bt_80_120),
+            part_surface_gt_120=compute_share(total_surface_gt_120),
         )
     return city_metrics
 
@@ -413,6 +492,52 @@ def get_typology_breakdown():
                 "label": segment_label,
                 "value": float(value) if value is not None else 0.0,
                 "count": int(count) if count is not None else 0,
+            }
+        )
+
+    return jsonify(
+        {
+            "label": label,
+            "year": year_param,
+            "total_transactions": int(entry.transactions_total or 0),
+            "segments": segments,
+        }
+    )
+
+
+@app.route("/api/surfaces", methods=["GET"])
+def get_surface_breakdown():
+    year_param = request.args.get("year", type=int)
+    arrondissement_param = request.args.get("arrondissement") or request.args.get(
+        "code_commune"
+    )
+
+    if year_param is None or arrondissement_param is None:
+        return jsonify({"error": "Paramètres 'year' et 'arrondissement' requis."}), 400
+
+    normalized_code = normalize_arrondissement_code(arrondissement_param)
+    if normalized_code is None:
+        return jsonify({"error": f"Arrondissement inconnu: {arrondissement_param}"}), 400
+
+    if normalized_code == "all":
+        entry = CITY_METRICS.get(year_param)
+    else:
+        entry = METRICS_BY_KEY.get((normalized_code, year_param))
+
+    if not entry:
+        return jsonify({"error": "Aucune donnée trouvée pour ces paramètres."}), 404
+
+    label = CITY_LABEL if normalized_code == "all" else ARRONDISSEMENTS.get(entry.code_commune)
+    segments = []
+    for segment_id, segment_label, share_attr, count_attr in SURFACE_SEGMENTS:
+        share_value = getattr(entry, share_attr)
+        count_value = getattr(entry, count_attr)
+        segments.append(
+            {
+                "id": segment_id,
+                "label": segment_label,
+                "value": float(share_value) if share_value is not None else 0.0,
+                "count": int(count_value) if count_value is not None else 0,
             }
         )
 

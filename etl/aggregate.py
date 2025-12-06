@@ -109,6 +109,59 @@ def agg_all():
     typology_counts = pd.concat([typology_counts, share_values], axis=1)
 
     agg_dvf_data = agg_dvf_data.merge(typology_counts, on=["code_commune", "annee"], how="left")
+
+    # compute surface segment mix based on surface_reelle_bati (m²)
+    def categorize_surface_area(surface_value):
+        try:
+            surface = float(surface_value)
+        except (TypeError, ValueError):
+            return None
+        if surface < 20:
+            return "lt_20"
+        if surface < 40:
+            return "bt_20_40"
+        if surface < 60:
+            return "bt_40_60"
+        if surface < 80:
+            return "bt_60_80"
+        if surface < 120:
+            return "bt_80_120"
+        return "gt_120"
+
+    surface_mix = cleaned_dvf_data[["code_commune", "annee", "surface_reelle_bati"]].copy()
+    surface_mix["surface_group"] = surface_mix["surface_reelle_bati"].apply(categorize_surface_area)
+    surface_mix = surface_mix.dropna(subset=["surface_group"])
+    surface_counts = (
+        surface_mix.groupby(["code_commune", "annee", "surface_group"])
+        .size()
+        .unstack(fill_value=0)
+    )
+
+    surface_groups = ["lt_20", "bt_20_40", "bt_40_60", "bt_60_80", "bt_80_120", "gt_120"]
+    for group_name in surface_groups:
+        if group_name not in surface_counts.columns:
+            surface_counts[group_name] = 0
+
+    surface_counts = surface_counts.reset_index()
+    surface_rename_map = {
+        "lt_20": "transactions_surface_lt_20",
+        "bt_20_40": "transactions_surface_bt_20_40",
+        "bt_40_60": "transactions_surface_bt_40_60",
+        "bt_60_80": "transactions_surface_bt_60_80",
+        "bt_80_120": "transactions_surface_bt_80_120",
+        "gt_120": "transactions_surface_gt_120",
+    }
+    surface_counts = surface_counts.rename(columns=surface_rename_map)
+    surface_transaction_cols = list(surface_rename_map.values())
+    surface_totals = surface_counts[surface_transaction_cols].sum(axis=1).replace(0, pd.NA)
+    surface_shares = surface_counts[surface_transaction_cols].div(surface_totals, axis=0) * 100
+    surface_shares = surface_shares.round(2)
+    surface_shares.columns = [
+        col.replace("transactions_surface_", "part_surface_") for col in surface_transaction_cols
+    ]
+    surface_counts = pd.concat([surface_counts, surface_shares], axis=1)
+
+    agg_dvf_data = agg_dvf_data.merge(surface_counts, on=["code_commune", "annee"], how="left")
     
     # calculate the variation of median price/m2 compared to previous year
     agg_dvf_data = agg_dvf_data.sort_values(by=["code_commune", "annee"])
