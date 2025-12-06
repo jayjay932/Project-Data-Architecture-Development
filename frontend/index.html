@@ -134,12 +134,12 @@
 
             <div class="dashboard-grid">
                 <div class="card">
-                    <h2><span class="icon">💰</span> Top 5 arrondissements les plus chers</h2>
-                    <div class="chart-container">
-                        <div style="text-align: center;">
-                            <p style="font-size: 2rem;">📊</p>
-                            <p><strong>Graphique en barres horizontales</strong></p>
-                            <p style="font-size: 0.85rem; margin-top: 0.5rem;">6ème > 7ème > 1er > 8ème > 4ème</p>
+                    <h2><span class="icon">📈</span> Evolution du prix médian/m²</h2>
+                    <div class="chart-container price-trend-chart">
+                        <div class="price-trend-wrapper">
+                            <canvas id="price-trend-chart" width="360" height="220" aria-label="Evolution du prix médian/m²"></canvas>
+                            <div id="price-trend-loading" class="chart-placeholder">Chargement...</div>
+                            <div id="price-trend-tooltip" class="chart-tooltip" role="tooltip"></div>
                         </div>
                     </div>
                 </div>

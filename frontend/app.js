@@ -23,6 +23,7 @@
     const metricsCache = new Map();
     const typologyCache = new Map();
     const surfaceCache = new Map();
+    let priceHistoryCache = null;
     const TYPOLOGY_SEGMENTS = [
         { id: 'studio_t1', label: 'Studios / T1' },
         { id: 't2', label: 'T2' },
@@ -61,6 +62,13 @@
         bars: [],
         lastPayload: null
     };
+    const priceTrendState = {
+        canvas: null,
+        tooltip: null,
+        wrapper: null,
+        points: [],
+        lastPayload: null
+    };
     const typologyChartState = {
         canvas: null,
         tooltip: null,
@@ -77,6 +85,8 @@
         initializeTypologyChartInteractions();
         initializeSurfaceChartInteractions();
         window.addEventListener('resize', handleSurfaceResize);
+        initializePriceTrendChart();
+        window.addEventListener('resize', handlePriceTrendResize);
     });
 
     function initializeMap() {
@@ -451,6 +461,17 @@
         }
     }
 
+    async function loadPriceTrendHistory() {
+        setPriceTrendLoading('Chargement...');
+        try {
+            const data = await fetchPriceHistory();
+            renderPriceTrendChart(data);
+        } catch (error) {
+            console.error(error);
+            renderPriceTrendError('Donnée indisponible');
+        }
+    }
+
     function initializeTypologyChartInteractions() {
         const canvas = document.getElementById('typology-chart');
         const tooltip = document.getElementById('typology-tooltip');
@@ -481,6 +502,21 @@
         canvas.addEventListener('mouseleave', hideSurfaceTooltip);
     }
 
+    function initializePriceTrendChart() {
+        const canvas = document.getElementById('price-trend-chart');
+        const tooltip = document.getElementById('price-trend-tooltip');
+        if (!canvas || !tooltip) {
+            return;
+        }
+        priceTrendState.canvas = canvas;
+        priceTrendState.tooltip = tooltip;
+        priceTrendState.wrapper = canvas.parentElement;
+        syncPriceTrendCanvasSize();
+        canvas.addEventListener('mousemove', handlePriceTrendHover);
+        canvas.addEventListener('mouseleave', hidePriceTrendTooltip);
+        loadPriceTrendHistory();
+    }
+
     function syncSurfaceCanvasSize() {
         const { canvas, wrapper } = surfaceChartState;
         if (!canvas || !wrapper) {
@@ -503,6 +539,31 @@
         syncSurfaceCanvasSize();
         if (surfaceChartState.lastPayload) {
             renderSurfaceChart(surfaceChartState.lastPayload);
+        }
+    }
+
+    function syncPriceTrendCanvasSize() {
+        const { canvas, wrapper } = priceTrendState;
+        if (!canvas || !wrapper) {
+            return;
+        }
+        const width = Math.floor(wrapper.clientWidth || canvas.width);
+        const height = Math.floor(wrapper.clientHeight || canvas.height);
+        if (width && canvas.width !== width) {
+            canvas.width = width;
+        }
+        if (height && canvas.height !== height) {
+            canvas.height = height;
+        }
+    }
+
+    function handlePriceTrendResize() {
+        if (!priceTrendState.canvas) {
+            return;
+        }
+        syncPriceTrendCanvasSize();
+        if (priceTrendState.lastPayload) {
+            renderPriceTrendChart(priceTrendState.lastPayload);
         }
     }
 
@@ -784,6 +845,147 @@
         });
     }
 
+    function setPriceTrendLoading(message) {
+        const loadingElement = document.getElementById('price-trend-loading');
+        const canvas = document.getElementById('price-trend-chart');
+        hidePriceTrendTooltip();
+        priceTrendState.points = [];
+        syncPriceTrendCanvasSize();
+        if (loadingElement) {
+            loadingElement.style.display = 'flex';
+            loadingElement.textContent = message;
+        }
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    }
+
+    function renderPriceTrendError(message) {
+        setPriceTrendLoading(message);
+    }
+
+    function renderPriceTrendChart(data) {
+        const canvas = document.getElementById('price-trend-chart');
+        const loadingElement = document.getElementById('price-trend-loading');
+        if (!canvas) {
+            return;
+        }
+
+        const ctx = canvas.getContext('2d');
+        priceTrendState.lastPayload = data;
+        syncPriceTrendCanvasSize();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        hidePriceTrendTooltip();
+        priceTrendState.canvas = priceTrendState.canvas || canvas;
+        priceTrendState.wrapper = priceTrendState.wrapper || canvas.parentElement;
+        priceTrendState.tooltip = priceTrendState.tooltip || document.getElementById('price-trend-tooltip');
+
+        const priceSeries = Array.isArray(data?.prices) ? data.prices : [];
+        const validPoints = priceSeries
+            .map((point) => ({
+                year: point.year,
+                value: typeof point.median_price_per_sqm === 'number' ? point.median_price_per_sqm : null
+            }))
+            .filter((point) => point.year && point.value !== null)
+            .sort((a, b) => a.year - b.year);
+
+        if (!validPoints.length) {
+            renderPriceTrendError('Aucune donnée pour cette sélection');
+            return;
+        }
+
+        if (loadingElement) {
+            loadingElement.style.display = 'none';
+        }
+
+        const padding = { top: 20, right: 20, bottom: 36, left: 48 };
+        const chartWidth = canvas.width - padding.left - padding.right;
+        const chartHeight = canvas.height - padding.top - padding.bottom;
+        const values = validPoints.map((point) => point.value);
+        const minValue = Math.min(...values);
+        const maxValue = Math.max(...values);
+        const range = maxValue - minValue || 1;
+
+        const getX = (index) => {
+            if (validPoints.length === 1) {
+                return padding.left + chartWidth / 2;
+            }
+            return padding.left + (index / (validPoints.length - 1)) * chartWidth;
+        };
+        const getY = (value) =>
+            padding.top + (1 - (value - minValue) / range) * chartHeight;
+
+        ctx.strokeStyle = '#E5E7EB';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(padding.left, padding.top + chartHeight);
+        ctx.lineTo(padding.left + chartWidth, padding.top + chartHeight);
+        ctx.stroke();
+
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#2563EB';
+        ctx.beginPath();
+        validPoints.forEach((point, index) => {
+            const x = getX(index);
+            const y = getY(point.value);
+            if (index === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(37, 99, 235, 0.15)';
+        ctx.beginPath();
+        validPoints.forEach((point, index) => {
+            const x = getX(index);
+            const y = getY(point.value);
+            if (index === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+        ctx.lineTo(padding.left + chartWidth, padding.top + chartHeight);
+        ctx.lineTo(padding.left, padding.top + chartHeight);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#1F2933';
+        ctx.font = '600 12px "Inter", sans-serif';
+        ctx.textAlign = 'center';
+        validPoints.forEach((point, index) => {
+            const x = getX(index);
+            const y = getY(point.value);
+            ctx.beginPath();
+            ctx.fillStyle = '#FFFFFF';
+            ctx.arc(x, y, 5.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.fillStyle = '#2563EB';
+            ctx.arc(x, y, 4, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        ctx.fillStyle = '#6B7280';
+        ctx.textAlign = 'center';
+        validPoints.forEach((point, index) => {
+            const x = getX(index);
+            ctx.fillText(point.year, x, canvas.height - 8);
+        });
+
+        priceTrendState.points = validPoints.map((point, index) => {
+            return {
+                x: getX(index),
+                y: getY(point.value),
+                value: point.value,
+                year: point.year
+            };
+        });
+    }
+
     async function fetchMetrics(year, arrondissement) {
         const cacheKey = `${year}-${arrondissement}`;
         if (metricsCache.has(cacheKey)) {
@@ -838,6 +1040,20 @@
         }
         const data = await response.json();
         surfaceCache.set(cacheKey, data);
+        return data;
+    }
+
+    async function fetchPriceHistory() {
+        if (priceHistoryCache) {
+            return priceHistoryCache;
+        }
+        const response = await fetch(`${API_BASE_URL}/api/price/history`);
+        if (!response.ok) {
+            const errorPayload = await response.json().catch(() => ({}));
+            throw new Error(errorPayload.error || 'Réponse serveur invalide');
+        }
+        const data = await response.json();
+        priceHistoryCache = data;
         return data;
     }
 
@@ -1031,6 +1247,49 @@
     function hideSurfaceTooltip() {
         if (surfaceChartState.tooltip) {
             surfaceChartState.tooltip.style.display = 'none';
+        }
+    }
+
+    function handlePriceTrendHover(event) {
+        const { canvas, tooltip, wrapper, points } = priceTrendState;
+        if (!canvas || !tooltip || !wrapper || !points.length) {
+            hidePriceTrendTooltip();
+            return;
+        }
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        const radius = 12;
+        const hoveredPoint = points.find(
+            (point) => Math.hypot(point.x - x, point.y - y) <= radius
+        );
+        if (!hoveredPoint) {
+            hidePriceTrendTooltip();
+            return;
+        }
+        showPriceTrendTooltip(hoveredPoint, event);
+    }
+
+    function showPriceTrendTooltip(point, event) {
+        const { tooltip, wrapper } = priceTrendState;
+        if (!tooltip || !wrapper) {
+            return;
+        }
+        tooltip.innerHTML = `
+            <p><strong>${point.year}</strong></p>
+            <p>Prix médian : ${formatCurrency(point.value)}</p>
+        `;
+        const rect = wrapper.getBoundingClientRect();
+        const offsetX = event.clientX - rect.left;
+        const offsetY = event.clientY - rect.top;
+        tooltip.style.left = `${offsetX}px`;
+        tooltip.style.top = `${offsetY}px`;
+        tooltip.style.display = 'block';
+    }
+
+    function hidePriceTrendTooltip() {
+        if (priceTrendState.tooltip) {
+            priceTrendState.tooltip.style.display = 'none';
         }
     }
 

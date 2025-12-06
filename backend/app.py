@@ -424,6 +424,18 @@ def get_price_by_year():
     )
 
 
+@app.route("/api/price/history", methods=["GET"])
+def get_price_history():
+    history = [
+        {
+            "year": entry.year,
+            "median_price_per_sqm": entry.median_price_per_sqm,
+        }
+        for entry in sorted(PRICE_DATA.values(), key=lambda value: value.year)
+    ]
+    return jsonify({"prices": history, "currency": "EUR"})
+
+
 @app.route("/api/metrics", methods=["GET"])
 def get_metrics():
     year_param = request.args.get("year", type=int)
