@@ -971,11 +971,10 @@
             ctx.arc(x, y, 4, 0, Math.PI * 2);
             ctx.fill();
             const label = formatCurrency(point.value);
-            const alignRight = x > padding.left + chartWidth - 70;
-            ctx.textAlign = alignRight ? 'right' : 'left';
-            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
             ctx.fillStyle = '#0F172A';
-            ctx.fillText(label, alignRight ? x - 10 : x + 10, y);
+            ctx.fillText(label, x, y - 10);
         });
 
         ctx.fillStyle = '#6B7280';
