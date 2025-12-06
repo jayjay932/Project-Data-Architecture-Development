@@ -145,12 +145,12 @@
                 </div>
 
                 <div class="card">
-                    <h2><span class="icon">🏘️</span> Logements sociaux par zone</h2>
-                    <div class="chart-container">
-                        <div style="text-align: center;">
-                            <p style="font-size: 2rem;">📊</p>
-                            <p><strong>Graphique en barres</strong></p>
-                            <p style="font-size: 0.85rem; margin-top: 0.5rem;">% de logements sociaux par arrondissement</p>
+                    <h2>Répartition du parc selon surface</h2>
+                    <div class="chart-container surface-chart">
+                        <div class="surface-chart-wrapper">
+                            <canvas id="surface-chart" width="320" height="240" aria-label="Répartition selon surface"></canvas>
+                            <div id="surface-loading" class="chart-placeholder">Chargement...</div>
+                            <div id="surface-tooltip" class="chart-tooltip" role="tooltip"></div>
                         </div>
                     </div>
                 </div>

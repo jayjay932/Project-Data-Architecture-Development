@@ -22,6 +22,7 @@
     const API_BASE_URL = 'http://localhost:8000';
     const metricsCache = new Map();
     const typologyCache = new Map();
+    const surfaceCache = new Map();
     const TYPOLOGY_SEGMENTS = [
         { id: 'studio_t1', label: 'Studios / T1' },
         { id: 't2', label: 'T2' },
@@ -37,6 +38,29 @@
         t5_plus: '#F17CB0'
     };
     const TYPOLOGY_FALLBACK_COLORS = ['#5DA5DA', '#FAA43A', '#60BD68', '#B276B2', '#F17CB0'];
+    const SURFACE_GROUPS = [
+        { id: 'lt_20', label: '< 20 m²' },
+        { id: 'bt_20_40', label: '20 - 40 m²' },
+        { id: 'bt_40_60', label: '40 - 60 m²' },
+        { id: 'bt_60_80', label: '60 - 80 m²' },
+        { id: 'bt_80_120', label: '80 - 120 m²' },
+        { id: 'gt_120', label: '> 120 m²' }
+    ];
+    const SURFACE_COLOR_MAP = {
+        lt_20: '#2563EB',
+        bt_20_40: '#0EA5E9',
+        bt_40_60: '#14B8A6',
+        bt_60_80: '#F59E0B',
+        bt_80_120: '#F97316',
+        gt_120: '#DB2777'
+    };
+    const surfaceChartState = {
+        canvas: null,
+        tooltip: null,
+        wrapper: null,
+        bars: [],
+        lastPayload: null
+    };
     const typologyChartState = {
         canvas: null,
         tooltip: null,
@@ -51,6 +75,8 @@
         initializeMap();
         initializeDashboardFilters();
         initializeTypologyChartInteractions();
+        initializeSurfaceChartInteractions();
+        window.addEventListener('resize', handleSurfaceResize);
     });
 
     function initializeMap() {
@@ -376,6 +402,7 @@
         const refreshDashboardData = () => {
             loadMetrics(state.year, state.arrondissement);
             loadTypology(state.year, state.arrondissement);
+            loadSurfaceDistribution(state.year, state.arrondissement);
         };
 
         yearSelect.addEventListener('change', (event) => {
@@ -413,6 +440,17 @@
         }
     }
 
+    async function loadSurfaceDistribution(year, arrondissement) {
+        setSurfaceLoading('Chargement...');
+        try {
+            const data = await fetchSurfaceDistribution(year, arrondissement);
+            renderSurfaceChart(data);
+        } catch (error) {
+            console.error(error);
+            renderSurfaceError('Donnée indisponible');
+        }
+    }
+
     function initializeTypologyChartInteractions() {
         const canvas = document.getElementById('typology-chart');
         const tooltip = document.getElementById('typology-tooltip');
@@ -426,6 +464,46 @@
 
         canvas.addEventListener('mousemove', handleTypologyHover);
         canvas.addEventListener('mouseleave', hideTypologyTooltip);
+    }
+
+    function initializeSurfaceChartInteractions() {
+        const canvas = document.getElementById('surface-chart');
+        const tooltip = document.getElementById('surface-tooltip');
+        if (!canvas || !tooltip) {
+            return;
+        }
+        surfaceChartState.canvas = canvas;
+        surfaceChartState.tooltip = tooltip;
+        surfaceChartState.wrapper = canvas.parentElement;
+        syncSurfaceCanvasSize();
+
+        canvas.addEventListener('mousemove', handleSurfaceHover);
+        canvas.addEventListener('mouseleave', hideSurfaceTooltip);
+    }
+
+    function syncSurfaceCanvasSize() {
+        const { canvas, wrapper } = surfaceChartState;
+        if (!canvas || !wrapper) {
+            return;
+        }
+        const width = Math.floor(wrapper.clientWidth || canvas.width);
+        const height = Math.floor(wrapper.clientHeight || canvas.height);
+        if (width && canvas.width !== width) {
+            canvas.width = width;
+        }
+        if (height && canvas.height !== height) {
+            canvas.height = height;
+        }
+    }
+
+    function handleSurfaceResize() {
+        if (!surfaceChartState.canvas) {
+            return;
+        }
+        syncSurfaceCanvasSize();
+        if (surfaceChartState.lastPayload) {
+            renderSurfaceChart(surfaceChartState.lastPayload);
+        }
     }
 
     function setMetricsLoading() {
@@ -604,6 +682,108 @@
         }
     }
 
+    function setSurfaceLoading(message) {
+        const loadingElement = document.getElementById('surface-loading');
+        const canvas = document.getElementById('surface-chart');
+        hideSurfaceTooltip();
+        surfaceChartState.bars = [];
+        syncSurfaceCanvasSize();
+        if (loadingElement) {
+            loadingElement.style.display = 'flex';
+            loadingElement.textContent = message;
+        }
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    }
+
+    function renderSurfaceError(message) {
+        setSurfaceLoading(message);
+    }
+
+    function renderSurfaceChart(data) {
+        const canvas = document.getElementById('surface-chart');
+        const loadingElement = document.getElementById('surface-loading');
+        if (!canvas) {
+            return;
+        }
+
+        const ctx = canvas.getContext('2d');
+        surfaceChartState.lastPayload = data;
+        syncSurfaceCanvasSize();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        hideSurfaceTooltip();
+        surfaceChartState.canvas = surfaceChartState.canvas || canvas;
+        surfaceChartState.wrapper = surfaceChartState.wrapper || canvas.parentElement;
+        surfaceChartState.tooltip = surfaceChartState.tooltip || document.getElementById('surface-tooltip');
+
+        const apiSegments = Array.isArray(data?.segments) ? data.segments : [];
+        const normalizedSegments = SURFACE_GROUPS.map((segmentMeta, index) => {
+            const match = apiSegments.find((segment) => segment.id === segmentMeta.id) || {};
+            return {
+                id: segmentMeta.id,
+                label: segmentMeta.label,
+                value: typeof match.value === 'number' ? match.value : 0,
+                count: typeof match.count === 'number' ? match.count : 0,
+                color: SURFACE_COLOR_MAP[segmentMeta.id] || Object.values(SURFACE_COLOR_MAP)[index] || '#2563EB'
+            };
+        });
+
+        const totalValue = normalizedSegments.reduce((sum, segment) => sum + segment.value, 0);
+        if (!totalValue) {
+            renderSurfaceError('Aucune donnée pour cette sélection');
+            return;
+        }
+
+        if (loadingElement) {
+            loadingElement.style.display = 'none';
+        }
+
+        ctx.font = '600 13px "Inter", sans-serif';
+        const longestLabel = normalizedSegments.reduce((max, segment) => {
+            return Math.max(max, ctx.measureText(segment.label).width);
+        }, 0);
+        const dynamicPaddingLeft = Math.min(160, Math.max(80, longestLabel + 26));
+        const padding = { top: 28, right: 18, bottom: 20, left: dynamicPaddingLeft };
+        const chartWidth = canvas.width - padding.left - padding.right;
+        const barHeight = 22;
+        const barGap = 8;
+        const chartHeight = normalizedSegments.length * (barHeight + barGap) - barGap;
+        surfaceChartState.bars = [];
+        const maxSegmentValue = Math.max(...normalizedSegments.map((segment) => segment.value), 1);
+
+        normalizedSegments.forEach((segment, index) => {
+            const barY = padding.top + index * (barHeight + barGap);
+            const barWidth = Math.max((segment.value / maxSegmentValue) * chartWidth, 0);
+            ctx.fillStyle = segment.color;
+            ctx.fillRect(padding.left, barY, barWidth, barHeight);
+
+            ctx.fillStyle = '#1F2933';
+            ctx.font = '600 13px "Inter", sans-serif';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(segment.label, padding.left - 14, barY + barHeight / 2);
+
+            const percentText = `${segment.value.toFixed(1)}%`;
+            const drawInside = barWidth > 48;
+            ctx.font = '600 12px "Inter", sans-serif';
+            ctx.textAlign = drawInside ? 'right' : 'left';
+            ctx.fillStyle = drawInside ? '#FFFFFF' : '#0F172A';
+            const percentX = drawInside ? padding.left + barWidth - 10 : padding.left + barWidth + 10;
+            ctx.fillText(percentText, Math.min(percentX, padding.left + chartWidth - 4), barY + barHeight / 2);
+
+            surfaceChartState.bars.push({
+                x: padding.left,
+                y: barY,
+                width: Math.max(barWidth, 1),
+                height: barHeight,
+                maxWidth: chartWidth,
+                segment
+            });
+        });
+    }
+
     async function fetchMetrics(year, arrondissement) {
         const cacheKey = `${year}-${arrondissement}`;
         if (metricsCache.has(cacheKey)) {
@@ -639,6 +819,25 @@
         }
         const data = await response.json();
         typologyCache.set(cacheKey, data);
+        return data;
+    }
+
+    async function fetchSurfaceDistribution(year, arrondissement) {
+        const cacheKey = `${year}-${arrondissement}`;
+        if (surfaceCache.has(cacheKey)) {
+            return surfaceCache.get(cacheKey);
+        }
+
+        const url = new URL(`${API_BASE_URL}/api/surfaces`);
+        url.searchParams.set('year', year);
+        url.searchParams.set('arrondissement', arrondissement);
+        const response = await fetch(url);
+        if (!response.ok) {
+            const errorPayload = await response.json().catch(() => ({}));
+            throw new Error(errorPayload.error || 'Réponse serveur invalide');
+        }
+        const data = await response.json();
+        surfaceCache.set(cacheKey, data);
         return data;
     }
 
@@ -786,6 +985,52 @@
     function hideTypologyTooltip() {
         if (typologyChartState.tooltip) {
             typologyChartState.tooltip.style.display = 'none';
+        }
+    }
+
+    function handleSurfaceHover(event) {
+        const { canvas, tooltip, wrapper, bars } = surfaceChartState;
+        if (!canvas || !tooltip || !wrapper || !bars.length) {
+            hideSurfaceTooltip();
+            return;
+        }
+
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        const hoveredBar = bars.find(
+            (bar) => x >= bar.x && x <= bar.x + bar.width && y >= bar.y && y <= bar.y + bar.height
+        );
+        if (!hoveredBar) {
+            hideSurfaceTooltip();
+            return;
+        }
+
+        showSurfaceTooltip(hoveredBar.segment, event);
+    }
+
+    function showSurfaceTooltip(segment, event) {
+        const { tooltip, wrapper } = surfaceChartState;
+        if (!tooltip || !wrapper) {
+            return;
+        }
+
+        tooltip.innerHTML = `
+            <p><strong>Surface : ${segment.label}</strong></p>
+            <p>Part : ${segment.value.toFixed(1)}%</p>
+            <p>Transactions : ${segment.count}</p>
+        `;
+        const rect = wrapper.getBoundingClientRect();
+        const offsetX = event.clientX - rect.left;
+        const offsetY = event.clientY - rect.top;
+        tooltip.style.left = `${offsetX}px`;
+        tooltip.style.top = `${offsetY}px`;
+        tooltip.style.display = 'block';
+    }
+
+    function hideSurfaceTooltip() {
+        if (surfaceChartState.tooltip) {
+            surfaceChartState.tooltip.style.display = 'none';
         }
     }
 
