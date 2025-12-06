@@ -958,7 +958,6 @@
 
         ctx.fillStyle = '#1F2933';
         ctx.font = '600 12px "Inter", sans-serif';
-        ctx.textAlign = 'center';
         validPoints.forEach((point, index) => {
             const x = getX(index);
             const y = getY(point.value);
@@ -970,17 +969,21 @@
             ctx.fillStyle = '#2563EB';
             ctx.arc(x, y, 4, 0, Math.PI * 2);
             ctx.fill();
+
             const label = formatCurrency(point.value);
-            let labelY = y - 12;
-            const minLabelY = padding.top + 12;
-            const maxLabelY = padding.top + chartHeight - 4;
-            if (labelY < minLabelY) {
-                labelY = y + 16;
-            } else if (labelY > maxLabelY) {
-                labelY = y - 16;
-            }
+            const labelWidth = ctx.measureText(label).width;
+            const spaceTop = y - padding.top;
+            const spaceBottom = padding.top + chartHeight - y;
+            const placeAbove = spaceTop >= 28 || spaceTop >= spaceBottom;
+            ctx.textBaseline = placeAbove ? 'bottom' : 'top';
             ctx.textAlign = 'center';
-            ctx.textBaseline = labelY > y ? 'top' : 'bottom';
+            let labelY = placeAbove ? Math.max(y - 10, padding.top + 4) : Math.min(y + 10, padding.top + chartHeight - 4);
+
+            if (x - labelWidth / 2 < padding.left) {
+                ctx.textAlign = 'left';
+            } else if (x + labelWidth / 2 > padding.left + chartWidth) {
+                ctx.textAlign = 'right';
+            }
             ctx.fillStyle = '#0F172A';
             ctx.fillText(label, x, labelY);
         });
