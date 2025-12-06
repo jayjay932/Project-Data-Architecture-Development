@@ -971,10 +971,18 @@
             ctx.arc(x, y, 4, 0, Math.PI * 2);
             ctx.fill();
             const label = formatCurrency(point.value);
+            let labelY = y - 12;
+            const minLabelY = padding.top + 12;
+            const maxLabelY = padding.top + chartHeight - 4;
+            if (labelY < minLabelY) {
+                labelY = y + 16;
+            } else if (labelY > maxLabelY) {
+                labelY = y - 16;
+            }
             ctx.textAlign = 'center';
-            ctx.textBaseline = 'bottom';
+            ctx.textBaseline = labelY > y ? 'top' : 'bottom';
             ctx.fillStyle = '#0F172A';
-            ctx.fillText(label, x, y - 10);
+            ctx.fillText(label, x, labelY);
         });
 
         ctx.fillStyle = '#6B7280';
