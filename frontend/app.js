@@ -976,16 +976,18 @@
             const spaceBottom = padding.top + chartHeight - y;
             const placeAbove = spaceTop >= 28 || spaceTop >= spaceBottom;
             ctx.textBaseline = placeAbove ? 'bottom' : 'top';
-            ctx.textAlign = 'center';
             let labelY = placeAbove ? Math.max(y - 10, padding.top + 4) : Math.min(y + 10, padding.top + chartHeight - 4);
-
-            if (x - labelWidth / 2 < padding.left) {
-                ctx.textAlign = 'left';
-            } else if (x + labelWidth / 2 > padding.left + chartWidth) {
-                ctx.textAlign = 'right';
+            let labelX = x;
+            const minX = padding.left + labelWidth / 2 + 4;
+            const maxX = padding.left + chartWidth - labelWidth / 2 - 4;
+            if (labelX < minX) {
+                labelX = minX;
+            } else if (labelX > maxX) {
+                labelX = maxX;
             }
+            ctx.textAlign = 'center';
             ctx.fillStyle = '#0F172A';
-            ctx.fillText(label, x, labelY);
+            ctx.fillText(label, labelX, labelY);
         });
 
         ctx.fillStyle = '#6B7280';
