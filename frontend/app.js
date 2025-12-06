@@ -970,6 +970,12 @@
             ctx.fillStyle = '#2563EB';
             ctx.arc(x, y, 4, 0, Math.PI * 2);
             ctx.fill();
+            const label = formatCurrency(point.value);
+            const alignRight = x > padding.left + chartWidth - 70;
+            ctx.textAlign = alignRight ? 'right' : 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#0F172A';
+            ctx.fillText(label, alignRight ? x - 10 : x + 10, y);
         });
 
         ctx.fillStyle = '#6B7280';
