@@ -23,7 +23,7 @@
     const metricsCache = new Map();
     const typologyCache = new Map();
     const surfaceCache = new Map();
-    let priceHistoryCache = null;
+    const priceHistoryCache = new Map();
     const TYPOLOGY_SEGMENTS = [
         { id: 'studio_t1', label: 'Studios / T1' },
         { id: 't2', label: 'T2' },
@@ -81,11 +81,11 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         initializeMap();
+        initializePriceTrendChart();
         initializeDashboardFilters();
         initializeTypologyChartInteractions();
         initializeSurfaceChartInteractions();
         window.addEventListener('resize', handleSurfaceResize);
-        initializePriceTrendChart();
         window.addEventListener('resize', handlePriceTrendResize);
     });
 
@@ -413,6 +413,7 @@
             loadMetrics(state.year, state.arrondissement);
             loadTypology(state.year, state.arrondissement);
             loadSurfaceDistribution(state.year, state.arrondissement);
+            loadPriceTrendHistory(state.arrondissement);
         };
 
         yearSelect.addEventListener('change', (event) => {
@@ -461,10 +462,13 @@
         }
     }
 
-    async function loadPriceTrendHistory() {
+    async function loadPriceTrendHistory(arrondissement) {
+        if (!priceTrendState.canvas) {
+            return;
+        }
         setPriceTrendLoading('Chargement...');
         try {
-            const data = await fetchPriceHistory();
+            const data = await fetchPriceHistory(arrondissement);
             renderPriceTrendChart(data);
         } catch (error) {
             console.error(error);
@@ -514,7 +518,6 @@
         syncPriceTrendCanvasSize();
         canvas.addEventListener('mousemove', handlePriceTrendHover);
         canvas.addEventListener('mouseleave', hidePriceTrendTooltip);
-        loadPriceTrendHistory();
     }
 
     function syncSurfaceCanvasSize() {
@@ -1043,17 +1046,20 @@
         return data;
     }
 
-    async function fetchPriceHistory() {
-        if (priceHistoryCache) {
-            return priceHistoryCache;
+    async function fetchPriceHistory(arrondissement) {
+        const cacheKey = arrondissement || 'all';
+        if (priceHistoryCache.has(cacheKey)) {
+            return priceHistoryCache.get(cacheKey);
         }
-        const response = await fetch(`${API_BASE_URL}/api/price/history`);
+        const url = new URL(`${API_BASE_URL}/api/price/history`);
+        url.searchParams.set('arrondissement', arrondissement || 'all');
+        const response = await fetch(url);
         if (!response.ok) {
             const errorPayload = await response.json().catch(() => ({}));
             throw new Error(errorPayload.error || 'Réponse serveur invalide');
         }
         const data = await response.json();
-        priceHistoryCache = data;
+        priceHistoryCache.set(cacheKey, data);
         return data;
     }
 

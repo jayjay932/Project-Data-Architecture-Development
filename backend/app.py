@@ -426,14 +426,40 @@ def get_price_by_year():
 
 @app.route("/api/price/history", methods=["GET"])
 def get_price_history():
+    arrondissement_param = request.args.get("arrondissement", "all")
+    normalized_code = normalize_arrondissement_code(arrondissement_param)
+    if normalized_code is None:
+        return (
+            jsonify({"error": f"Arrondissement inconnu: {arrondissement_param}"}),
+            400,
+        )
+
+    if normalized_code == "all":
+        entries = sorted(CITY_METRICS.items())
+        label = CITY_LABEL
+    else:
+        label = ARRONDISSEMENTS.get(normalized_code)
+        entries = sorted(
+            (
+                (year, entry)
+                for (code, year), entry in METRICS_BY_KEY.items()
+                if code == normalized_code
+            ),
+            key=lambda item: item[0],
+        )
+
     history = [
         {
-            "year": entry.year,
-            "median_price_per_sqm": entry.median_price_per_sqm,
+            "year": year,
+            "median_price_per_sqm": entry.prix_m2_median,
         }
-        for entry in sorted(PRICE_DATA.values(), key=lambda value: value.year)
+        for year, entry in entries
+        if entry.prix_m2_median is not None
     ]
-    return jsonify({"prices": history, "currency": "EUR"})
+    if not history:
+        return jsonify({"error": "Aucune donnée trouvée pour ces paramètres."}), 404
+
+    return jsonify({"prices": history, "currency": "EUR", "label": label})
 
 
 @app.route("/api/metrics", methods=["GET"])
