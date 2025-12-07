@@ -6,7 +6,7 @@ Urban Data Explorer est une application de dataviz qui aide les collectivités, 
 - Une **API Flask** documentée par Swagger (`/api/docs`) pour intégrer les métriques dans d’autres outils.
 - Un **pipeline ETL** reproductible (`etl/`) qui consolide les données DVF et socio-économiques en un jeu de données “gold” prêt à l’emploi.
 
-![Aperçu](spec/preview.png) <!-- facultatif si image disponible -->
+![Aperçu](spec/preview.png)
 
 ## Fonctionnalités principales
 
@@ -40,7 +40,8 @@ python backend/app.py
 ```
 
 L’application est accessible sur `http://localhost:8000`.  
-La documentation interactive est publiée sur `http://localhost:8000/api/docs`.
+La documentation interactive est publiée sur `http://localhost:8000/api/docs`.  
+Pour sécuriser l’API, un mode Authentification JWT optionnel est décrit plus bas.
 
 ## Consommation API rapide
 
@@ -56,6 +57,23 @@ curl "http://localhost:8000/api/price/history?arrondissement=all"
 ```
 
 Toutes les routes et schémas sont décrits dans Swagger.
+
+### Authentification JWT (optionnelle)
+
+Dans les environnements sensibles, l’API peut être protégée par JSON Web Tokens :
+
+1. Définir la variable d’environnement `UDE_API_SECRET` et activer la vérification (`UDE_REQUIRE_AUTH=1`).
+2. Générer un token (exemple Python) :
+   ```python
+   import jwt, datetime, os
+   payload = {"sub": "demo-user", "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=2)}
+   token = jwt.encode(payload, os.environ["UDE_API_SECRET"], algorithm="HS256")
+   print(token)
+   ```
+3. Ajouter l’en-tête `Authorization: Bearer <token>` à chaque requête.  
+4. En cas de token absent/invalide, l’API renvoie `401 Unauthorized`.
+
+> En local, ce mode n’est pas activé pour simplifier l’exploration. Adaptez `backend/app.py` pour brancher les décorateurs de vérification selon vos besoins.
 
 ## Structure du dépôt
 
