@@ -62,6 +62,27 @@
         bars: [],
         lastPayload: null
     };
+    const comparisonState = {
+        year: null,
+        arrA: null,
+        arrB: null,
+        valid: false,
+        dataA: null,
+        dataB: null
+    };
+    const RADAR_FIELDS = [
+        { key: 'prix_m2_median', label: 'Prix/m²', formatter: formatCurrency },
+        { key: 'tx_logement_sociaux', label: 'Log. sociaux', formatter: formatPercent },
+        { key: 'revenu_median', label: 'Revenu médian', formatter: formatCurrency },
+        { key: 'densite_population', label: 'Densité', formatter: formatDensity },
+        { key: 'transactions_total', label: 'Transactions', formatter: formatCompactNumber }
+    ];
+    const comparisonRadarState = {
+        canvas: null,
+        tooltip: null,
+        wrapper: null,
+        points: []
+    };
     const priceTrendState = {
         canvas: null,
         tooltip: null,
@@ -102,6 +123,7 @@
         initializeTypologyChartInteractions();
         initializeSurfaceChartInteractions();
         initializeComparisonCards();
+        initializeComparisonRadar();
         window.addEventListener('resize', handleSurfaceResize);
         window.addEventListener('resize', handlePriceTrendResize);
     });
@@ -537,6 +559,20 @@
         canvas.addEventListener('mouseleave', hidePriceTrendTooltip);
     }
 
+    function initializeComparisonRadar() {
+        const canvas = document.getElementById('comparison-radar-chart');
+        const tooltip = document.getElementById('comparison-radar-tooltip');
+        if (!canvas || !tooltip) {
+            return;
+        }
+        comparisonRadarState.canvas = canvas;
+        comparisonRadarState.tooltip = tooltip;
+        comparisonRadarState.wrapper = canvas.parentElement;
+        setComparisonRadarLoading('Sélection en attente...');
+        canvas.addEventListener('mousemove', handleComparisonRadarHover);
+        canvas.addEventListener('mouseleave', hideComparisonRadarTooltip);
+    }
+
     function initializeComparisonCards() {
         const yearSelect = document.getElementById('comparison-year-select');
         const arrSelectA = document.getElementById('comparison-arrA-select');
@@ -591,6 +627,9 @@
             arrB: arrSelectB.value,
             valid: false
         };
+        comparisonState.year = state.year;
+        comparisonState.arrA = state.arrA;
+        comparisonState.arrB = state.arrB;
 
         const refreshComparison = () => {
             const errorElement = document.getElementById('comparison-arrB-error');
@@ -601,25 +640,36 @@
             }
 
             if (!state.valid) {
+                comparisonState.valid = false;
+                comparisonState.dataA = null;
+                comparisonState.dataB = null;
                 renderComparisonCardInvalid('a');
                 renderComparisonCardInvalid('b');
+                renderComparisonRadar();
                 return;
             }
 
+            comparisonState.valid = true;
+            comparisonState.year = state.year;
+            comparisonState.arrA = state.arrA;
+            comparisonState.arrB = state.arrB;
             loadComparisonCard('a', state.year, state.arrA);
             loadComparisonCard('b', state.year, state.arrB);
         };
 
         yearSelect.addEventListener('change', (event) => {
             state.year = event.target.value;
+            comparisonState.year = state.year;
             refreshComparison();
         });
         arrSelectA.addEventListener('change', (event) => {
             state.arrA = event.target.value;
+            comparisonState.arrA = state.arrA;
             refreshComparison();
         });
         arrSelectB.addEventListener('change', (event) => {
             state.arrB = event.target.value;
+            comparisonState.arrB = state.arrB;
             refreshComparison();
         });
 
@@ -1157,6 +1207,8 @@
                     : rawValue ?? 'N/A';
             element.textContent = formatted ?? 'N/A';
         });
+        comparisonState[`data${side.toUpperCase()}`] = data;
+        renderComparisonRadar();
     }
 
     function renderComparisonCardError(side) {
@@ -1171,6 +1223,8 @@
                 element.textContent = 'N/A';
             }
         });
+        comparisonState[`data${side.toUpperCase()}`] = null;
+        renderComparisonRadar();
     }
 
     function renderComparisonCardInvalid(side) {
@@ -1185,6 +1239,245 @@
                 element.textContent = 'N/A';
             }
         });
+        comparisonState[`data${side.toUpperCase()}`] = null;
+        renderComparisonRadar();
+    }
+
+    function setComparisonRadarLoading(message) {
+        const loadingElement = document.getElementById('comparison-radar-loading');
+        const canvas = document.getElementById('comparison-radar-chart');
+        if (loadingElement) {
+            loadingElement.style.display = 'flex';
+            loadingElement.textContent = message;
+        }
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        comparisonRadarState.points = [];
+        hideComparisonRadarTooltip();
+    }
+
+    function renderComparisonRadarEmpty(message) {
+        setComparisonRadarLoading(message || 'Sélection invalide');
+    }
+
+    function renderComparisonRadar() {
+        const canvas = comparisonRadarState.canvas;
+        if (!canvas) {
+            return;
+        }
+        const loadingElement = document.getElementById('comparison-radar-loading');
+        if (
+            !comparisonState.valid ||
+            !comparisonState.dataA ||
+            !comparisonState.dataB
+        ) {
+            renderComparisonRadarEmpty(
+                comparisonState.valid ? 'Données insuffisantes' : 'Sélection invalide'
+            );
+            return;
+        }
+
+        const ctx = canvas.getContext('2d');
+        if (loadingElement) {
+            loadingElement.style.display = 'none';
+        }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        hideComparisonRadarTooltip();
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = Math.min(centerX, centerY) - 32;
+        const angleStep = (Math.PI * 2) / RADAR_FIELDS.length;
+        const axisInfos = RADAR_FIELDS.map((field) => {
+            const valueA = toNumericValue(comparisonState.dataA[field.key]);
+            const valueB = toNumericValue(comparisonState.dataB[field.key]);
+            const maxValue = Math.max(
+                1,
+                valueA ?? 0,
+                valueB ?? 0
+            );
+            return {
+                field,
+                valueA: valueA ?? 0,
+                valueB: valueB ?? 0,
+                maxValue
+            };
+        });
+
+        ctx.strokeStyle = '#E5E7EB';
+        ctx.lineWidth = 1;
+        for (let level = 1; level <= 4; level += 1) {
+            const levelRadius = (radius * level) / 4;
+            ctx.beginPath();
+            axisInfos.forEach((_, index) => {
+                const angle = -Math.PI / 2 + index * angleStep;
+                const x = centerX + Math.cos(angle) * levelRadius;
+                const y = centerY + Math.sin(angle) * levelRadius;
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.closePath();
+            ctx.stroke();
+        }
+
+        axisInfos.forEach((axis, index) => {
+            const angle = -Math.PI / 2 + index * angleStep;
+            const x = centerX + Math.cos(angle) * radius;
+            const y = centerY + Math.sin(angle) * radius;
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+
+            ctx.save();
+            ctx.fillStyle = '#1F2933';
+            ctx.font = '600 12px "Inter", sans-serif';
+            ctx.textAlign =
+                Math.abs(Math.cos(angle)) < 0.1
+                    ? 'center'
+                    : Math.cos(angle) > 0
+                    ? 'left'
+                    : 'right';
+            ctx.textBaseline =
+                Math.abs(Math.sin(angle)) < 0.1
+                    ? 'middle'
+                    : Math.sin(angle) > 0
+                    ? 'top'
+                    : 'bottom';
+            ctx.fillText(axis.field.label, x, y);
+            ctx.restore();
+        });
+
+        const datasets = [
+            {
+                id: 'A',
+                color: '#2563EB',
+                fill: 'rgba(37, 99, 235, 0.2)',
+                border: '#2563EB',
+                data: axisInfos.map((axis) => ({
+                    raw: axis.valueA,
+                    normalized: axis.maxValue ? axis.valueA / axis.maxValue : 0,
+                    formatted:
+                        axis.field.formatter?.(axis.valueA) ??
+                        (axis.valueA || axis.valueA === 0
+                            ? axis.valueA.toString()
+                            : 'N/A'),
+                    label: axis.field.label
+                })),
+                label: comparisonState.dataA?.label || 'A'
+            },
+            {
+                id: 'B',
+                color: '#EC4899',
+                fill: 'rgba(236, 72, 153, 0.2)',
+                border: '#EC4899',
+                data: axisInfos.map((axis) => ({
+                    raw: axis.valueB,
+                    normalized: axis.maxValue ? axis.valueB / axis.maxValue : 0,
+                    formatted:
+                        axis.field.formatter?.(axis.valueB) ??
+                        (axis.valueB || axis.valueB === 0
+                            ? axis.valueB.toString()
+                            : 'N/A'),
+                    label: axis.field.label
+                })),
+                label: comparisonState.dataB?.label || 'B'
+            }
+        ];
+
+        comparisonRadarState.points = [];
+        datasets.forEach((dataset) => {
+            ctx.beginPath();
+            dataset.data.forEach((pointData, index) => {
+                const angle = -Math.PI / 2 + index * angleStep;
+                const x =
+                    centerX + Math.cos(angle) * radius * Math.max(pointData.normalized, 0);
+                const y =
+                    centerY + Math.sin(angle) * radius * Math.max(pointData.normalized, 0);
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+                comparisonRadarState.points.push({
+                    x,
+                    y,
+                    dataset: dataset.label,
+                    value: pointData.formatted,
+                    label: pointData.label
+                });
+            });
+            ctx.closePath();
+            ctx.fillStyle = dataset.fill;
+            ctx.strokeStyle = dataset.border;
+            ctx.lineWidth = 2;
+            ctx.fill();
+            ctx.stroke();
+
+            dataset.data.forEach((pointData, index) => {
+                const angle = -Math.PI / 2 + index * angleStep;
+                const x =
+                    centerX + Math.cos(angle) * radius * Math.max(pointData.normalized, 0);
+                const y =
+                    centerY + Math.sin(angle) * radius * Math.max(pointData.normalized, 0);
+                ctx.beginPath();
+                ctx.fillStyle = '#FFFFFF';
+                ctx.arc(x, y, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.fillStyle = dataset.border;
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        });
+    }
+
+    function handleComparisonRadarHover(event) {
+        const { canvas, tooltip, wrapper, points } = comparisonRadarState;
+        if (!canvas || !tooltip || !wrapper || !points.length) {
+            hideComparisonRadarTooltip();
+            return;
+        }
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        const hoveredPoint = points.find(
+            (point) => Math.hypot(point.x - x, point.y - y) <= 10
+        );
+        if (!hoveredPoint) {
+            hideComparisonRadarTooltip();
+            return;
+        }
+        showComparisonRadarTooltip(hoveredPoint, event);
+    }
+
+    function showComparisonRadarTooltip(point, event) {
+        const { tooltip, wrapper } = comparisonRadarState;
+        if (!tooltip || !wrapper) {
+            return;
+        }
+        tooltip.innerHTML = `
+            <p><strong>${point.dataset}</strong></p>
+            <p>${point.label}</p>
+            <p>${point.value}</p>
+        `;
+        const rect = wrapper.getBoundingClientRect();
+        const offsetX = event.clientX - rect.left;
+        const offsetY = event.clientY - rect.top;
+        tooltip.style.left = `${offsetX}px`;
+        tooltip.style.top = `${offsetY}px`;
+        tooltip.style.display = 'block';
+    }
+
+    function hideComparisonRadarTooltip() {
+        if (comparisonRadarState.tooltip) {
+            comparisonRadarState.tooltip.style.display = 'none';
+        }
     }
 
     async function fetchMetrics(year, arrondissement) {
@@ -1347,6 +1640,23 @@
         const symbol = value > 0 ? '↑' : value < 0 ? '↓' : '→';
         const referenceYear = typeof year === 'number' ? ` vs ${year - 1}` : '';
         return `${symbol} ${sign}${value.toFixed(2)}%${referenceYear}`;
+    }
+
+    function formatCompactNumber(value) {
+        if (typeof value !== 'number' || Number.isNaN(value)) {
+            return 'N/A';
+        }
+        return new Intl.NumberFormat('fr-FR', {
+            notation: 'compact',
+            maximumFractionDigits: 1
+        }).format(value);
+    }
+
+    function toNumericValue(value) {
+        if (typeof value === 'number' && Number.isFinite(value)) {
+            return value;
+        }
+        return null;
     }
 
     function normalizeAngle(angle) {

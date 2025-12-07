@@ -244,11 +244,11 @@
 
             <div class="card" style="margin-top: 1.5rem;">
                 <h2><span class="icon">📊</span> Comparaison graphique</h2>
-                <div class="chart-container" style="height: 350px;">
-                    <div style="text-align: center;">
-                        <p style="font-size: 2rem;">📊</p>
-                        <p><strong>Graphique radar multi-axes</strong></p>
-                        <p style="font-size: 0.85rem; margin-top: 0.5rem;">Comparaison visuelle des indicateurs</p>
+                <div class="chart-container radar-chart">
+                    <div class="radar-chart-wrapper">
+                        <canvas id="comparison-radar-chart" width="360" height="360" aria-label="Comparaison radar"></canvas>
+                        <div id="comparison-radar-loading" class="chart-placeholder">Chargement...</div>
+                        <div id="comparison-radar-tooltip" class="chart-tooltip" role="tooltip"></div>
                     </div>
                 </div>
             </div>
