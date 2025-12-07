@@ -1327,9 +1327,20 @@
 
         axisInfos.forEach((axis, index) => {
             const angle = -Math.PI / 2 + index * angleStep;
-            const labelRadius = radius + 18;
-            const x = centerX + Math.cos(angle) * labelRadius;
-            const y = centerY + Math.sin(angle) * labelRadius;
+            const labelRadius = radius + 22;
+            let x = centerX + Math.cos(angle) * labelRadius;
+            let y = centerY + Math.sin(angle) * labelRadius;
+            const labelWidth = ctx.measureText(axis.field.label).width;
+            if (x + labelWidth / 2 > canvas.width) {
+                x = canvas.width - labelWidth / 2 - 4;
+            } else if (x - labelWidth / 2 < 0) {
+                x = labelWidth / 2 + 4;
+            }
+            if (y < 12) {
+                y = 12;
+            } else if (y > canvas.height - 4) {
+                y = canvas.height - 4;
+            }
             ctx.beginPath();
             ctx.moveTo(centerX, centerY);
             ctx.lineTo(centerX + Math.cos(angle) * radius, centerY + Math.sin(angle) * radius);
@@ -1338,18 +1349,8 @@
             ctx.save();
             ctx.fillStyle = '#1F2933';
             ctx.font = '600 12px "Inter", sans-serif';
-            ctx.textAlign =
-                Math.abs(Math.cos(angle)) < 0.1
-                    ? 'center'
-                    : Math.cos(angle) > 0
-                    ? 'left'
-                    : 'right';
-            ctx.textBaseline =
-                Math.abs(Math.sin(angle)) < 0.1
-                    ? 'middle'
-                    : Math.sin(angle) > 0
-                    ? 'top'
-                    : 'bottom';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
             ctx.fillText(axis.field.label, x, y);
             ctx.restore();
         });
