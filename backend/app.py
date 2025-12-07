@@ -6,7 +6,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from flask import Flask, abort, jsonify, request, send_from_directory
+import json
+from flask import Flask, abort, jsonify, request, send_from_directory, Response
 from flask_cors import CORS
 
 
@@ -403,6 +404,311 @@ CORS(app)
 PRICE_DATA = load_price_data(PRICE_DATA_PATH)
 METRICS_BY_KEY = load_all_metrics(ALL_DATA_PATH)
 CITY_METRICS = build_city_metrics(METRICS_BY_KEY, PRICE_DATA)
+SWAGGER_SPEC = {
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Urban Data Explorer API",
+        "version": "1.0.0",
+        "description": (
+            "API fournissant les métriques immobilières et socio-économiques "
+            "utilisées par l'application Urban Data Explorer."
+        ),
+    },
+    "servers": [{"url": "http://localhost:8000"}],
+    "paths": {
+        "/api/price": {
+            "get": {
+                "summary": "Récupérer le prix médian/m² pour une année",
+                "parameters": [
+                    {
+                        "name": "year",
+                        "in": "query",
+                        "required": True,
+                        "schema": {"type": "integer"},
+                        "description": "Année demandée (ex: 2024).",
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Prix trouvé",
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/PriceResponse"}
+                            }
+                        },
+                    },
+                    "400": {"description": "Paramètre manquant"},
+                    "404": {"description": "Aucune donnée"},
+                },
+            }
+        },
+        "/api/price/history": {
+            "get": {
+                "summary": "Historique du prix médian/m²",
+                "parameters": [
+                    {
+                        "name": "arrondissement",
+                        "in": "query",
+                        "required": False,
+                        "schema": {"type": "string"},
+                        "description": "Code arrondissement (ex: 75101) ou 'all'.",
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Historique retourné",
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/PriceHistoryResponse"}
+                            }
+                        },
+                    },
+                    "400": {"description": "Paramètre invalide"},
+                    "404": {"description": "Aucune donnée"},
+                },
+            }
+        },
+        "/api/metrics": {
+            "get": {
+                "summary": "Métriques générales par année et arrondissement",
+                "parameters": [
+                    {
+                        "name": "year",
+                        "in": "query",
+                        "required": True,
+                        "schema": {"type": "integer"},
+                    },
+                    {
+                        "name": "arrondissement",
+                        "in": "query",
+                        "required": True,
+                        "schema": {"type": "string"},
+                        "description": "Code arrondissement (ex: 75101) ou 'all'.",
+                    },
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Métriques retournées",
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/MetricResponse"}
+                            }
+                        },
+                    },
+                    "400": {"description": "Paramètre invalide"},
+                    "404": {"description": "Aucune donnée"},
+                },
+            }
+        },
+        "/api/typology": {
+            "get": {
+                "summary": "Répartition par typologie de logement",
+                "parameters": [
+                    {
+                        "name": "year",
+                        "in": "query",
+                        "required": True,
+                        "schema": {"type": "integer"},
+                    },
+                    {
+                        "name": "arrondissement",
+                        "in": "query",
+                        "required": True,
+                        "schema": {"type": "string"},
+                    },
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/TypologyResponse"}
+                            }
+                        }
+                    },
+                    "400": {"description": "Paramètre invalide"},
+                    "404": {"description": "Aucune donnée"},
+                },
+            }
+        },
+        "/api/surfaces": {
+            "get": {
+                "summary": "Répartition du parc selon la surface",
+                "parameters": [
+                    {
+                        "name": "year",
+                        "in": "query",
+                        "required": True,
+                        "schema": {"type": "integer"},
+                    },
+                    {
+                        "name": "arrondissement",
+                        "in": "query",
+                        "required": True,
+                        "schema": {"type": "string"},
+                    },
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/SurfaceResponse"}
+                            }
+                        }
+                    },
+                    "400": {"description": "Paramètre invalide"},
+                    "404": {"description": "Aucune donnée"},
+                },
+            }
+        },
+        "/api/arrondissements": {
+            "get": {
+                "summary": "Liste des arrondissements",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {"$ref": "#/components/schemas/Arrondissement"}
+                                }
+                            }
+                        }
+                    }
+                },
+            }
+        },
+        "/api/arrondissements.geojson": {
+            "get": {
+                "summary": "Polygones GeoJSON des arrondissements",
+                "responses": {
+                    "200": {
+                        "description": "GeoJSON",
+                        "content": {
+                            "application/geo+json": {
+                                "schema": {"type": "object"}
+                            }
+                        },
+                    },
+                    "404": {"description": "Fichier introuvable"},
+                },
+            }
+        },
+        "/api/docs.json": {
+            "get": {
+                "summary": "Définition OpenAPI",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {"schema": {"type": "object"}}
+                        }
+                    }
+                },
+            }
+        },
+        "/api/docs": {
+            "get": {
+                "summary": "Interface Swagger UI",
+                "responses": {"200": {"description": "HTML Swagger UI"}},
+            }
+        },
+    },
+    "components": {
+        "schemas": {
+            "PriceResponse": {
+                "type": "object",
+                "properties": {
+                    "year": {"type": "integer"},
+                    "median_price_per_sqm": {"type": "number"},
+                    "currency": {"type": "string"},
+                },
+            },
+            "PriceHistoryResponse": {
+                "type": "object",
+                "properties": {
+                    "currency": {"type": "string"},
+                    "label": {"type": "string"},
+                    "prices": {
+                        "type": "array",
+                        "items": {"$ref": "#/components/schemas/PriceResponse"},
+                    },
+                },
+            },
+            "MetricResponse": {
+                "type": "object",
+                "properties": {
+                    "code_commune": {"type": "string"},
+                    "label": {"type": "string"},
+                    "year": {"type": "integer"},
+                    "prix_m2_median": {"type": "number"},
+                    "variation": {"type": "number", "nullable": True},
+                    "revenu_median": {"type": "number", "nullable": True},
+                    "tx_logement_sociaux": {"type": "number", "nullable": True},
+                    "air_quality_global": {"type": "string", "nullable": True},
+                    "densite_population": {"type": "number", "nullable": True},
+                    "transactions_total": {"type": "integer", "nullable": True},
+                    "transactions_studio_t1": {"type": "integer", "nullable": True},
+                    "transactions_t2": {"type": "integer", "nullable": True},
+                    "transactions_t3": {"type": "integer", "nullable": True},
+                    "transactions_t4": {"type": "integer", "nullable": True},
+                    "transactions_t5_plus": {"type": "integer", "nullable": True},
+                    "part_studio_t1": {"type": "number", "nullable": True},
+                    "part_t2": {"type": "number", "nullable": True},
+                    "part_t3": {"type": "number", "nullable": True},
+                    "part_t4": {"type": "number", "nullable": True},
+                    "part_t5_plus": {"type": "number", "nullable": True},
+                },
+            },
+            "TypologySegment": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "label": {"type": "string"},
+                    "value": {"type": "number"},
+                    "count": {"type": "integer"},
+                },
+            },
+            "TypologyResponse": {
+                "type": "object",
+                "properties": {
+                    "label": {"type": "string"},
+                    "year": {"type": "integer"},
+                    "total_transactions": {"type": "integer"},
+                    "segments": {
+                        "type": "array",
+                        "items": {"$ref": "#/components/schemas/TypologySegment"},
+                    },
+                },
+            },
+            "SurfaceResponse": {
+                "type": "object",
+                "properties": {
+                    "label": {"type": "string"},
+                    "year": {"type": "integer"},
+                    "total_transactions": {"type": "integer"},
+                    "segments": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {"type": "string"},
+                                "label": {"type": "string"},
+                                "value": {"type": "number"},
+                                "count": {"type": "integer"},
+                            },
+                        },
+                    },
+                },
+            },
+            "Arrondissement": {
+                "type": "object",
+                "properties": {
+                    "code_commune": {"type": "string"},
+                    "label": {"type": "string"},
+                },
+            },
+        }
+    },
+}
 
 
 @app.route("/api/price", methods=["GET"])
@@ -422,6 +728,43 @@ def get_price_by_year():
             "currency": "EUR",
         }
     )
+
+
+@app.route("/api/docs.json", methods=["GET"])
+def swagger_spec_json():
+    return jsonify(SWAGGER_SPEC)
+
+
+@app.route("/api/docs", methods=["GET"])
+def swagger_ui():
+    html = """
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Urban Data Explorer API Docs</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.5/swagger-ui.min.css" integrity="sha512-WR0+GqOR/mdrIW6DCe4k74vNysGEKMluSleqrs9jwELyhl725LLJoPLD114F8CbnMD4HzyBbs6k8ZZrVSu2V1g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <style>
+            body { margin: 0; }
+            #swagger-ui { height: 100vh; }
+        </style>
+    </head>
+    <body>
+        <div id="swagger-ui"></div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.5/swagger-ui-bundle.min.js" integrity="sha512-8pBe6u432qCMgfHdCqkfNNpJBWlAbIYW/W2PASi6DPd7OJbRRqtD9h5pz50jdK5Zk90un0nLBKBPXn1HULICYA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <script>
+            window.onload = () => {
+                SwaggerUIBundle({
+                    url: '/api/docs.json',
+                    dom_id: '#swagger-ui',
+                    presets: [SwaggerUIBundle.presets.apis],
+                });
+            };
+        </script>
+    </body>
+    </html>
+    """
+    return Response(html, mimetype="text/html")
 
 
 @app.route("/api/price/history", methods=["GET"])
