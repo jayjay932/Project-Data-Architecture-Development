@@ -269,6 +269,13 @@ body {
     height: 100%;
 }
 
+.comparison-error-message {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.8rem;
+    color: #e74c3c;
+}
+
 .typology-legend {
     list-style: none;
     padding: 0;

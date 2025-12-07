@@ -588,10 +588,24 @@
         const state = {
             year: yearSelect.value,
             arrA: arrSelectA.value,
-            arrB: arrSelectB.value
+            arrB: arrSelectB.value,
+            valid: false
         };
 
         const refreshComparison = () => {
+            const errorElement = document.getElementById('comparison-arrB-error');
+            const invalid = state.arrA === state.arrB;
+            state.valid = !invalid;
+            if (errorElement) {
+                errorElement.textContent = invalid ? 'Veuillez choisir deux arrondissements différents.' : '';
+            }
+
+            if (!state.valid) {
+                renderComparisonCardInvalid('a');
+                renderComparisonCardInvalid('b');
+                return;
+            }
+
             loadComparisonCard('a', state.year, state.arrA);
             loadComparisonCard('b', state.year, state.arrB);
         };
@@ -1150,6 +1164,20 @@
         const nameElement = document.getElementById(`comparison-card-${lowerSide}-name`);
         if (nameElement) {
             nameElement.textContent = 'Donnée indisponible';
+        }
+        COMPARISON_FIELD_CONFIG.forEach((field) => {
+            const element = document.getElementById(`comparison-card-${lowerSide}-${field.suffix}`);
+            if (element) {
+                element.textContent = 'N/A';
+            }
+        });
+    }
+
+    function renderComparisonCardInvalid(side) {
+        const lowerSide = side.toLowerCase();
+        const nameElement = document.getElementById(`comparison-card-${lowerSide}-name`);
+        if (nameElement) {
+            nameElement.textContent = 'Sélection invalide';
         }
         COMPARISON_FIELD_CONFIG.forEach((field) => {
             const element = document.getElementById(`comparison-card-${lowerSide}-${field.suffix}`);
