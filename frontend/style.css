@@ -287,8 +287,8 @@ body {
 .radar-chart-wrapper {
     position: relative;
     width: 100%;
-    max-width: 420px;
-    height: 360px;
+    max-width: 520px;
+    height: 420px;
 }
 
 .radar-chart-wrapper canvas {
