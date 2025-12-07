@@ -1328,11 +1328,8 @@
         axisInfos.forEach((axis, index) => {
             const angle = -Math.PI / 2 + index * angleStep;
             const labelRadius = radius + 18;
-            let x = centerX + Math.cos(angle) * labelRadius;
-            let y = centerY + Math.sin(angle) * labelRadius;
-            const margin = 12;
-            x = Math.min(canvas.width - margin, Math.max(margin, x));
-            y = Math.min(canvas.height - margin, Math.max(margin, y));
+            const x = centerX + Math.cos(angle) * labelRadius;
+            const y = centerY + Math.sin(angle) * labelRadius;
             ctx.beginPath();
             ctx.moveTo(centerX, centerY);
             ctx.lineTo(centerX + Math.cos(angle) * radius, centerY + Math.sin(angle) * radius);
