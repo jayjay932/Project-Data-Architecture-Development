@@ -165,79 +165,79 @@
                 <h3>Sélectionner les arrondissements à comparer</h3>
                 <div class="filter-group">
                     <div class="filter-item">
-                        <label>Arrondissement A</label>
-                        <select>
-                            <option>1er - Louvre</option>
-                            <option>2ème - Bourse</option>
-                            <option selected>6ème - Luxembourg</option>
-                        </select>
+                        <label for="comparison-year-select">Année</label>
+                        <select id="comparison-year-select"></select>
                     </div>
                     <div class="filter-item">
-                        <label>Arrondissement B</label>
-                        <select>
-                            <option>18ème - Butte-Montmartre</option>
-                            <option selected>19ème - Buttes-Chaumont</option>
-                            <option>20ème - Ménilmontant</option>
-                        </select>
+                        <label for="comparison-arrA-select">Arrondissement A</label>
+                        <select id="comparison-arrA-select"></select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="comparison-arrB-select">Arrondissement B</label>
+                        <select id="comparison-arrB-select"></select>
                     </div>
                 </div>
             </div>
 
             <div class="comparison-grid">
-                <div class="comparison-card">
+                <div class="comparison-card" data-comparison-card="A">
                     <div class="comparison-header">
-                        <h3>6ème - Luxembourg</h3>
+                        <h3 id="comparison-card-a-name">--</h3>
                     </div>
                     <div class="stat-row">
                         <span class="stat-label">Prix/m² médian</span>
-                        <span class="stat-value">14 800€</span>
+                        <span class="stat-value" id="comparison-card-a-price">--</span>
                     </div>
                     <div class="stat-row">
                         <span class="stat-label">Évolution annuelle</span>
-                        <span class="stat-value">+2.5%</span>
+                        <span class="stat-value" id="comparison-card-a-variation">--</span>
                     </div>
                     <div class="stat-row">
                         <span class="stat-label">Logements sociaux</span>
-                        <span class="stat-value">8.2%</span>
+                        <span class="stat-value" id="comparison-card-a-social">--</span>
                     </div>
                     <div class="stat-row">
                         <span class="stat-label">Revenu médian</span>
-                        <span class="stat-value">42 500€/an</span>
+                        <span class="stat-value" id="comparison-card-a-income">--</span>
                     </div>
                     <div class="stat-row">
                         <span class="stat-label">Densité de population</span>
-                        <span class="stat-value">1000 hab/km²</span>
+                        <span class="stat-value" id="comparison-card-a-density">--</span>
                     </div>                    
                     <div class="stat-row">
                         <span class="stat-label">Qualité de l'air</span>
-                        <span class="stat-value">Bon</span>
+                        <span class="stat-value" id="comparison-card-a-air">--</span>
                     </div>                    
                 </div>
 
-                <div class="comparison-card">
+                <div class="comparison-card" data-comparison-card="B">
                     <div class="comparison-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                        <h3>19ème - Buttes-Chaumont</h3>
+                        <h3 id="comparison-card-b-name">--</h3>
                     </div>
                     <div class="stat-row">
-                        <span class="stat-label">Prix médian/m²</span>
-                        <span class="stat-value">8 200€</span>
+                        <span class="stat-label">Prix/m² médian</span>
+                        <span class="stat-value" id="comparison-card-b-price">--</span>
                     </div>
                     <div class="stat-row">
                         <span class="stat-label">Évolution annuelle</span>
-                        <span class="stat-value">+4.1%</span>
+                        <span class="stat-value" id="comparison-card-b-variation">--</span>
                     </div>
                     <div class="stat-row">
                         <span class="stat-label">Logements sociaux</span>
-                        <span class="stat-value">32.7%</span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-label">Prix studio moyen</span>
-                        <span class="stat-value">235K€</span>
+                        <span class="stat-value" id="comparison-card-b-social">--</span>
                     </div>
                     <div class="stat-row">
                         <span class="stat-label">Revenu médian</span>
-                        <span class="stat-value">28 300€/an</span>
+                        <span class="stat-value" id="comparison-card-b-income">--</span>
                     </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Densité de population</span>
+                        <span class="stat-value" id="comparison-card-b-density">--</span>
+                    </div>                    
+                    <div class="stat-row">
+                        <span class="stat-label">Qualité de l'air</span>
+                        <span class="stat-value" id="comparison-card-b-air">--</span>
+                    </div>                    
                 </div>
             </div>
 

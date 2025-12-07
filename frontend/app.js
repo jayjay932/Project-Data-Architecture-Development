@@ -69,6 +69,22 @@
         points: [],
         lastPayload: null
     };
+    const COMPARISON_FIELD_CONFIG = [
+        { suffix: 'price', key: 'prix_m2_median', formatter: formatCurrency },
+        {
+            suffix: 'variation',
+            key: 'variation',
+            formatter: (value, data) => formatVariationDisplay(value, data.year)
+        },
+        { suffix: 'social', key: 'tx_logement_sociaux', formatter: formatPercent },
+        { suffix: 'income', key: 'revenu_median', formatter: formatCurrency },
+        { suffix: 'density', key: 'densite_population', formatter: formatDensity },
+        {
+            suffix: 'air',
+            key: 'air_quality_global',
+            formatter: (value) => value || 'N/A'
+        }
+    ];
     const typologyChartState = {
         canvas: null,
         tooltip: null,
@@ -85,6 +101,7 @@
         initializeDashboardFilters();
         initializeTypologyChartInteractions();
         initializeSurfaceChartInteractions();
+        initializeComparisonCards();
         window.addEventListener('resize', handleSurfaceResize);
         window.addEventListener('resize', handlePriceTrendResize);
     });
@@ -518,6 +535,81 @@
         syncPriceTrendCanvasSize();
         canvas.addEventListener('mousemove', handlePriceTrendHover);
         canvas.addEventListener('mouseleave', hidePriceTrendTooltip);
+    }
+
+    function initializeComparisonCards() {
+        const yearSelect = document.getElementById('comparison-year-select');
+        const arrSelectA = document.getElementById('comparison-arrA-select');
+        const arrSelectB = document.getElementById('comparison-arrB-select');
+        if (!yearSelect || !arrSelectA || !arrSelectB) {
+            return;
+        }
+
+        const overviewYearSelect = document.getElementById('year-select');
+        if (overviewYearSelect && !yearSelect.options.length) {
+            yearSelect.innerHTML = overviewYearSelect.innerHTML;
+            yearSelect.value = overviewYearSelect.value;
+        }
+        if (!yearSelect.options.length) {
+            ['2020', '2021', '2022', '2023', '2024', '2025'].forEach((year, index) => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                if (index === 0) {
+                    option.selected = true;
+                }
+                yearSelect.appendChild(option);
+            });
+        }
+
+        const arrondissementSelect = document.getElementById('arrondissement-select');
+        const populateArrSelect = (targetSelect) => {
+            if (!targetSelect) {
+                return;
+            }
+            if (arrondissementSelect) {
+                const options = Array.from(arrondissementSelect.options)
+                    .filter((option) => option.value && option.value !== 'all');
+                targetSelect.innerHTML = options
+                    .map((option) => `<option value="${option.value}">${option.textContent}</option>`)
+                    .join('');
+            }
+        };
+        if (!arrSelectA.options.length) {
+            populateArrSelect(arrSelectA);
+        }
+        if (!arrSelectB.options.length) {
+            populateArrSelect(arrSelectB);
+            if (arrSelectB.options.length > 1) {
+                arrSelectB.selectedIndex = 1;
+            }
+        }
+
+        const state = {
+            year: yearSelect.value,
+            arrA: arrSelectA.value,
+            arrB: arrSelectB.value
+        };
+
+        const refreshComparison = () => {
+            loadComparisonCard('a', state.year, state.arrA);
+            loadComparisonCard('b', state.year, state.arrB);
+        };
+
+        yearSelect.addEventListener('change', (event) => {
+            state.year = event.target.value;
+            refreshComparison();
+        });
+        arrSelectA.addEventListener('change', (event) => {
+            state.arrA = event.target.value;
+            refreshComparison();
+        });
+        arrSelectB.addEventListener('change', (event) => {
+            state.arrB = event.target.value;
+            refreshComparison();
+        });
+
+        refreshComparison();
     }
 
     function syncSurfaceCanvasSize() {
@@ -1007,6 +1099,66 @@
         });
     }
 
+    async function loadComparisonCard(side, year, arrondissement) {
+        setComparisonCardLoading(side);
+        try {
+            const data = await fetchMetrics(year, arrondissement);
+            renderComparisonCard(side, data);
+        } catch (error) {
+            console.error(error);
+            renderComparisonCardError(side);
+        }
+    }
+
+    function setComparisonCardLoading(side) {
+        const lowerSide = side.toLowerCase();
+        const nameElement = document.getElementById(`comparison-card-${lowerSide}-name`);
+        if (nameElement) {
+            nameElement.textContent = 'Chargement...';
+        }
+        COMPARISON_FIELD_CONFIG.forEach((field) => {
+            const element = document.getElementById(`comparison-card-${lowerSide}-${field.suffix}`);
+            if (element) {
+                element.textContent = 'Chargement...';
+            }
+        });
+    }
+
+    function renderComparisonCard(side, data) {
+        const lowerSide = side.toLowerCase();
+        const nameElement = document.getElementById(`comparison-card-${lowerSide}-name`);
+        if (nameElement) {
+            const label = data.label || data.code_commune || 'Arrondissement';
+            nameElement.textContent = `${label} (${data.year})`;
+        }
+        COMPARISON_FIELD_CONFIG.forEach((field) => {
+            const element = document.getElementById(`comparison-card-${lowerSide}-${field.suffix}`);
+            if (!element) {
+                return;
+            }
+            const rawValue = data[field.key];
+            const formatted =
+                field.formatter && typeof field.formatter === 'function'
+                    ? field.formatter(rawValue, data)
+                    : rawValue ?? 'N/A';
+            element.textContent = formatted ?? 'N/A';
+        });
+    }
+
+    function renderComparisonCardError(side) {
+        const lowerSide = side.toLowerCase();
+        const nameElement = document.getElementById(`comparison-card-${lowerSide}-name`);
+        if (nameElement) {
+            nameElement.textContent = 'Donnée indisponible';
+        }
+        COMPARISON_FIELD_CONFIG.forEach((field) => {
+            const element = document.getElementById(`comparison-card-${lowerSide}-${field.suffix}`);
+            if (element) {
+                element.textContent = 'N/A';
+            }
+        });
+    }
+
     async function fetchMetrics(year, arrondissement) {
         const cacheKey = `${year}-${arrondissement}`;
         if (metricsCache.has(cacheKey)) {
@@ -1157,6 +1309,16 @@
             maximumFractionDigits: 0
         }).format(value);
         return `${formatted} hab/km²`;
+    }
+
+    function formatVariationDisplay(value, year) {
+        if (typeof value !== 'number' || Number.isNaN(value)) {
+            return 'N/A';
+        }
+        const sign = value > 0 ? '+' : value < 0 ? '' : '';
+        const symbol = value > 0 ? '↑' : value < 0 ? '↓' : '→';
+        const referenceYear = typeof year === 'number' ? ` vs ${year - 1}` : '';
+        return `${symbol} ${sign}${value.toFixed(2)}%${referenceYear}`;
     }
 
     function normalizeAngle(angle) {
