@@ -126,6 +126,7 @@
         initializeComparisonRadar();
         window.addEventListener('resize', handleSurfaceResize);
         window.addEventListener('resize', handlePriceTrendResize);
+        window.addEventListener('resize', handleComparisonRadarResize);
     });
 
     function initializeMap() {
@@ -568,6 +569,7 @@
         comparisonRadarState.canvas = canvas;
         comparisonRadarState.tooltip = tooltip;
         comparisonRadarState.wrapper = canvas.parentElement;
+        syncComparisonRadarCanvasSize();
         setComparisonRadarLoading('Sélection en attente...');
         canvas.addEventListener('mousemove', handleComparisonRadarHover);
         canvas.addEventListener('mouseleave', hideComparisonRadarTooltip);
@@ -1243,6 +1245,29 @@
         renderComparisonRadar();
     }
 
+    function syncComparisonRadarCanvasSize() {
+        const { canvas, wrapper } = comparisonRadarState;
+        if (!canvas || !wrapper) {
+            return;
+        }
+        const width = Math.floor(wrapper.clientWidth || canvas.width);
+        const height = Math.floor(wrapper.clientHeight || canvas.height);
+        if (width && canvas.width !== width) {
+            canvas.width = width;
+        }
+        if (height && canvas.height !== height) {
+            canvas.height = height;
+        }
+    }
+
+    function handleComparisonRadarResize() {
+        if (!comparisonRadarState.canvas) {
+            return;
+        }
+        syncComparisonRadarCanvasSize();
+        renderComparisonRadar();
+    }
+
     function setComparisonRadarLoading(message) {
         const loadingElement = document.getElementById('comparison-radar-loading');
         const canvas = document.getElementById('comparison-radar-chart');
@@ -1266,6 +1291,7 @@
         if (!canvas) {
             return;
         }
+        syncComparisonRadarCanvasSize();
         const loadingElement = document.getElementById('comparison-radar-loading');
         if (
             !comparisonState.valid ||
