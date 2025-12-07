@@ -1255,7 +1255,6 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
         comparisonRadarState.points = [];
-        hideComparisonRadarTooltip();
     }
 
     function renderComparisonRadarEmpty(message) {
