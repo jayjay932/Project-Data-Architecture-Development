@@ -1371,7 +1371,8 @@
                             : 'N/A'),
                     label: axis.field.label
                 })),
-                label: comparisonState.dataA?.label || 'A'
+                label: comparisonState.dataA?.label || 'Arrondissement A',
+                year: comparisonState.dataA?.year || comparisonState.year
             },
             {
                 id: 'B',
@@ -1388,7 +1389,8 @@
                             : 'N/A'),
                     label: axis.field.label
                 })),
-                label: comparisonState.dataB?.label || 'B'
+                label: comparisonState.dataB?.label || 'Arrondissement B',
+                year: comparisonState.dataB?.year || comparisonState.year
             }
         ];
 
@@ -1410,6 +1412,7 @@
                     x,
                     y,
                     dataset: dataset.label,
+                    year: dataset.year,
                     value: pointData.formatted,
                     label: pointData.label
                 });
@@ -1465,14 +1468,14 @@
         }
         tooltip.innerHTML = `
             <p><strong>${point.dataset}</strong></p>
-            <p>${point.label}</p>
-            <p>${point.value}</p>
+            <p>Année : ${point.year || comparisonState.year || 'N/A'}</p>
+            <p>${point.label} : ${point.value}</p>
         `;
         const rect = wrapper.getBoundingClientRect();
         const offsetX = event.clientX - rect.left;
         const offsetY = event.clientY - rect.top;
-        tooltip.style.left = `${offsetX}px`;
-        tooltip.style.top = `${offsetY}px`;
+        tooltip.style.left = `${offsetX + 12}px`;
+        tooltip.style.top = `${offsetY + 12}px`;
         tooltip.style.display = 'block';
     }
 
