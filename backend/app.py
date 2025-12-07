@@ -743,7 +743,7 @@ def swagger_ui():
     <head>
         <meta charset="UTF-8" />
         <title>Urban Data Explorer API Docs</title>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.5/swagger-ui.min.css" integrity="sha512-WR0+GqOR/mdrIW6DCe4k74vNysGEKMluSleqrs9jwELyhl725LLJoPLD114F8CbnMD4HzyBbs6k8ZZrVSu2V1g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" />
         <style>
             body { margin: 0; }
             #swagger-ui { height: 100vh; }
@@ -751,13 +751,15 @@ def swagger_ui():
     </head>
     <body>
         <div id="swagger-ui"></div>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.5/swagger-ui-bundle.min.js" integrity="sha512-8pBe6u432qCMgfHdCqkfNNpJBWlAbIYW/W2PASi6DPd7OJbRRqtD9h5pz50jdK5Zk90un0nLBKBPXn1HULICYA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
+        <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-standalone-preset.js"></script>
         <script>
             window.onload = () => {
-                SwaggerUIBundle({
+                window.ui = SwaggerUIBundle({
                     url: '/api/docs.json',
                     dom_id: '#swagger-ui',
-                    presets: [SwaggerUIBundle.presets.apis],
+                    presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+                    layout: 'StandaloneLayout'
                 });
             };
         </script>
