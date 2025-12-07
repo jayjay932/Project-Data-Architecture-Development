@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import csv
+import functools
+import json
+import os
 from collections import Counter
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-import json
+import jwt
 from flask import Flask, abort, jsonify, request, send_from_directory, Response
 from flask_cors import CORS
 
@@ -57,6 +60,39 @@ SURFACE_SEGMENTS = [
     ),
     ("gt_120", "> 120 m²", "part_surface_gt_120", "transactions_surface_gt_120"),
 ]
+
+
+REQUIRE_AUTH = os.getenv("UDE_REQUIRE_AUTH", "0").lower() in {"1", "true", "yes"}
+API_SECRET = os.getenv("UDE_API_SECRET")
+if REQUIRE_AUTH and not API_SECRET:
+    raise RuntimeError("UDE_REQUIRE_AUTH=1 mais UDE_API_SECRET est manquant.")
+
+
+def _extract_bearer_token() -> Optional[str]:
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header:
+        return None
+    if auth_header.lower().startswith("bearer "):
+        return auth_header.split(" ", 1)[1].strip()
+    return None
+
+
+def require_jwt(view_func):
+    @functools.wraps(view_func)
+    def wrapper(*args, **kwargs):
+        if not REQUIRE_AUTH:
+            return view_func(*args, **kwargs)
+        token = _extract_bearer_token()
+        if not token:
+            return jsonify({"error": "Authentification requise"}), 401
+        try:
+            payload = jwt.decode(token, API_SECRET, algorithms=["HS256"])
+            request.jwt_payload = payload
+        except jwt.InvalidTokenError:
+            return jsonify({"error": "Token invalide"}), 401
+        return view_func(*args, **kwargs)
+
+    return wrapper
 
 
 @dataclass(frozen=True)
@@ -712,6 +748,7 @@ SWAGGER_SPEC = {
 
 
 @app.route("/api/price", methods=["GET"])
+@require_jwt
 def get_price_by_year():
     year_param = request.args.get("year", type=int)
     if year_param is None:
@@ -770,6 +807,7 @@ def swagger_ui():
 
 
 @app.route("/api/price/history", methods=["GET"])
+@require_jwt
 def get_price_history():
     arrondissement_param = request.args.get("arrondissement", "all")
     normalized_code = normalize_arrondissement_code(arrondissement_param)
@@ -808,6 +846,7 @@ def get_price_history():
 
 
 @app.route("/api/metrics", methods=["GET"])
+@require_jwt
 def get_metrics():
     year_param = request.args.get("year", type=int)
     arrondissement_param = request.args.get("arrondissement") or request.args.get(
@@ -837,6 +876,7 @@ def get_metrics():
 
 
 @app.route("/api/typology", methods=["GET"])
+@require_jwt
 def get_typology_breakdown():
     year_param = request.args.get("year", type=int)
     arrondissement_param = request.args.get("arrondissement") or request.args.get(
@@ -889,6 +929,7 @@ def get_typology_breakdown():
 
 
 @app.route("/api/surfaces", methods=["GET"])
+@require_jwt
 def get_surface_breakdown():
     year_param = request.args.get("year", type=int)
     arrondissement_param = request.args.get("arrondissement") or request.args.get(
@@ -935,6 +976,7 @@ def get_surface_breakdown():
 
 
 @app.route("/api/arrondissements", methods=["GET"])
+@require_jwt
 def list_arrondissements():
     arr_list = [
         {"code_commune": code, "label": label}
@@ -944,6 +986,7 @@ def list_arrondissements():
 
 
 @app.route("/api/arrondissements.geojson", methods=["GET"])
+@require_jwt
 def get_arrondissements_geojson():
     if not ARRONDISSEMENTS_FILE.exists():
         return jsonify({"error": f"Fichier {ARRONDISSEMENTS_FILE.name} introuvable."}), 404
