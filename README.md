@@ -1,115 +1,86 @@
-# Urban Data Explorer – Documentation
+# Urban Data Explorer
 
-## Vue d’ensemble
+Urban Data Explorer est une application de dataviz qui aide les collectivités, investisseurs et citoyens à comprendre l’évolution du marché immobilier parisien (prix, typologies, surfaces, revenus, qualité de l’air, etc.). Le projet fournit :
 
-Urban Data Explorer est une application full-stack permettant de visualiser l’évolution du marché immobilier parisien, ses indicateurs socio-économiques ainsi que la composition du parc résidentiel. Le projet se structure autour de trois briques principales :
+- Un **frontend** responsive (MapLibre + graphiques canvas) avec onglets “Vue d’ensemble”, “Comparaison” et “Données”.
+- Une **API Flask** documentée par Swagger (`/api/docs`) pour intégrer les métriques dans d’autres outils.
+- Un **pipeline ETL** reproductible (`etl/`) qui consolide les données DVF et socio-économiques en un jeu de données “gold” prêt à l’emploi.
 
-1. **ETL (`etl/`)** – consolide les données brutes (DVF, socio-économie, qualité de l’air, densité) vers une table gold `data/gold_layer/all_data.csv`.
-2. **Backend Flask (`backend/`)** – expose les métriques à l’application via des endpoints REST documentés par Swagger.
-3. **Frontend statique (`frontend/`)** – interface HTML/CSS/JS (MapLibre + canvas custom) offrant diverses visualisations et comparatifs interactifs.
+![Aperçu](spec/preview.png) <!-- facultatif si image disponible -->
 
-```
-├── backend/
-│   ├── app.py             # API Flask + Swagger
-│   └── ...
-├── etl/
-│   ├── aggregate.py       # Pipeline d’agrégation vers gold layer
-│   └── ...
-├── data/
-│   ├── bronze_layer/      # Données sources
-│   ├── silver_layer/      # Données nettoyées
-│   └── gold_layer/        # Données agrégées servies à l’API
-└── frontend/
-    ├── index.html         # UI tabs (Overview, Comparaison, Data)
-    ├── app.js             # Logique de rendu (cartes, graphiques, tooltips…)
-    └── style.css
-```
+## Fonctionnalités principales
 
-## Pipeline de données
+- Carte interactive des prix/m² avec popups contextualisés.
+- KPI dynamiques (prix, revenus, logements sociaux, densité, qualité de l’air).
+- Graphiques dédiés : typologies, surfaces, évolution prix, radar comparatif multi-axes.
+- Mode comparaison A/B avec filtres année/arrondissements et validation intégrée.
+- Documentation Swagger et endpoints REST pour alimenter notebooks ou outils BI.
 
-1. **Bronze ➜ Silver (`etl/clean.py`)**
-   - Nettoyage: encodage, normalisation des codes INSEE, filtrage des surfaces aberrantes.
-   - Calculs: prix/m², typologies via `nombre_pieces_principales`, surfaces INSEE, densité.
+## Prérequis
 
-2. **Silver ➜ Gold (`etl/aggregate.py`)**
-   - Agrégation par couple `(code_commune, annee)` :
-     - Prix médian, variation vs année N-1.
-     - Mix typologique (counts + parts).
-     - Mix surface (<20, 20‑40, 40‑60, 60‑80, 80‑120, >120 m²).
-     - Transactions, revenus, logements sociaux, qualité de l’air, densité.
-   - Fusion avec indicateurs socio-économiques.
-   - Export `data/gold_layer/all_data.csv`.
+- Python 3.11+
+- Pip / virtualenv
+- (optionnel) Node/npm pour outils tiers, mais le frontend est purement statique.
 
-3. **City-level metrics** : `backend/app.py` produit `CITY_METRICS` en sommant l’ensemble des arrondissements pour les vues “Paris (all)”.
-
-## API Backend
-
-Serveur Flask (port 8000) avec CORS activé.
-
-| Endpoint                     | Description                                      |
-|-----------------------------|--------------------------------------------------|
-| `GET /api/price?year=`      | Prix médian/m² global pour une année.            |
-| `GET /api/price/history`    | Historique des prix (ville ou arrondissement).   |
-| `GET /api/metrics`          | Métriques complètes (prix, revenus, densité…).   |
-| `GET /api/typology`         | Répartition par typologie de logement.           |
-| `GET /api/surfaces`         | Répartition du parc par classes de surface.      |
-| `GET /api/arrondissements`  | Liste code/libellé des arrondissements.          |
-| `GET /api/arrondissements.geojson` | Polygones GeoJSON pour MapLibre.         |
-| `GET /api/docs`             | Swagger UI (doc interactive).                    |
-| `GET /api/docs.json`        | Spécification OpenAPI brute.                     |
-
-Tous les endpoints acceptent `arrondissement=all` pour l’agrégat ville. Les schémas de réponse sont décrits dans Swagger (définis dans `SWAGGER_SPEC`).
-
-## Frontend
-
-- **Tabs** : Vue d’ensemble (carte + KPIs + typologie + surfaces), Comparaison (cartes A/B, radar multi-axes, historique graphiques), Données.
-- **MapLibre** : `frontend/app.js` initie la carte, survols et popups.
-- **Graphiques canvas** :
-  - Typologie donut + tooltips custom.
-  - Bar chart surfaces aligné sur classes <20 → >120 m².
-  - Line chart “Évolution du prix” filtre arrondissements & années.
-  - Radar multi-axes comparant prix, logements sociaux, revenus, densité, transactions.
-
-## Lancer le projet
-
-1. **Installer les dépendances**  
-   ```
-   python -m venv venv
-   source venv/bin/activate  # (ou venv\Scripts\activate sous Windows)
-   pip install -r requirements.txt
-   ```
-
-2. **Générer les données gold (si besoin)**  
-   ```
-   ./venv/Scripts/python etl/aggregate.py
-   ```
-
-3. **Lancer l’API**  
-   ```
-   ./venv/Scripts/python backend/app.py
-   ```
-   Accéder ensuite à `http://localhost:8000` pour l’UI, `http://localhost:8000/api/docs` pour Swagger.
-
-4. **Développement frontend** : Les fichiers statiques sont servis directement par Flask. Toute modification dans `frontend/` est automatiquement reflétée après rechargement du navigateur.
-
-## Tests & vérifications rapides
+## Installation & démarrage rapide
 
 ```bash
-# Vérifier qu’un endpoint répond
-curl "http://localhost:8000/api/metrics?year=2024&arrondissement=75101"
+# 1. Créer un environnement virtuel
+python -m venv venv
+source venv/bin/activate            # Windows: venv\Scripts\activate
 
-# Consulter la doc interactive
-open http://localhost:8000/api/docs
+# 2. Installer les dépendances
+pip install -r requirements.txt
+
+# 3. Générer ou mettre à jour les données gold
+python etl/aggregate.py
+
+# 4. Lancer l’API + frontend statique
+python backend/app.py
 ```
 
-## Notes d’architecture
+L’application est accessible sur `http://localhost:8000`.  
+La documentation interactive est publiée sur `http://localhost:8000/api/docs`.
 
-- Les graphiques utilisent des canvas purs (sans libs) pour garder un bundle léger.
-- Cache côté frontend (`Map`, `priceHistoryCache`, etc.) pour éviter les re-fetchs.
-- L’API valide systématiquement les codes INSEE via `normalize_arrondissement_code`.
-- Swagger facilite l’onboarding des nouvelles intégrations (data scientists, BI, etc.).
+## Consommation API rapide
 
-Pour plus de détails, voir :
-- `etl/aggregate.py` pour les transformations calculatoires.
-- `frontend/app.js` (sections `renderTypologyChart`, `renderSurfaceChart`, `renderPriceTrendChart`, `renderComparisonRadar`).
-- `backend/app.py` pour les points d’entrée API et la doc Swagger.
+```bash
+# Prix médian 2024
+curl "http://localhost:8000/api/price?year=2024"
+
+# Métriques complètes pour le 6ᵉ arrondissement en 2023
+curl "http://localhost:8000/api/metrics?year=2023&arrondissement=75106"
+
+# Historique des prix pour Paris (all)
+curl "http://localhost:8000/api/price/history?arrondissement=all"
+```
+
+Toutes les routes et schémas sont décrits dans Swagger.
+
+## Structure du dépôt
+
+```
+backend/     # API Flask + doc Swagger
+etl/         # Pipelines de nettoyage et d’agrégation
+frontend/    # HTML/CSS/JS (MapLibre + graphiques custom)
+data/        # Bronze / Silver / Gold
+README.md    # Guide utilisateur (ce document)
+architecture.md   # Documentation d’architecture détaillée
+data_catalog.md   # Data catalog / justification des sources
+```
+
+## Ressources complémentaires
+
+- [architecture.md](architecture.md) : description détaillée des couches de données, du backend et des interactions front/backend.
+- [data_catalog.md](data_catalog.md) : mini data catalog expliquant les sources (DVF, INSEE, Airparif…), les champs exposés et les choix méthodologiques.
+- [Swagger UI](http://localhost:8000/api/docs) : tester/explorer l’API.
+
+## Support
+
+En cas de question ou de bug :
+
+1. Vérifier les logs du serveur (`backend/app.py`).
+2. Confirmer que le pipeline ETL a bien généré `data/gold_layer/all_data.csv`.
+3. Consulter la doc Swagger pour valider les paramètres.
+
+Des contributions sont les bienvenues via issues/pull requests. Merci ! :)
