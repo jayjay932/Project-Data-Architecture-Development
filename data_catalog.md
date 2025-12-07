@@ -52,7 +52,7 @@ Ces indicateurs internes sont justifiés car ils apportent des insights au-delà
 - **Normalisation codes INSEE** (`zfill(5)`) pour éviter les problèmes de jointure.
 - **Dates** : toutes les métriques sont indexées par `annee` pour garantir la comparer entre périodes.
 - **Cache API** : in-memory (backend et frontend) pour garantir des temps de réponse rapides sans recalcul.
-- **Swagger/OpenAPI** documente les schémas pour faciliter la réutilisation.
+- **Swagger/OpenAPI** documente les schémas; option JWT (`UDE_REQUIRE_AUTH`) permet de sécuriser l’accès sans impacter les utilisateurs internes.
 
 ## Limites connues
 

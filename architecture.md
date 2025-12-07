@@ -78,6 +78,7 @@ Ce document décrit l’architecture logicielle de **Urban Data Explorer** ainsi
 - **Front** : pas de dépendances lourdes (MapLibre + canvas custom), rendant l’UI rapide.
 - **Back** : aucune base de données, lecture depuis CSV gold. Idéal pour POC/atelier, mais peut être migré vers une base si le volume augmente.
 - **Swagger** facilite la découverte API et la gouvernance.
+- **Authentification JWT** : activable via `UDE_REQUIRE_AUTH=1` + `UDE_API_SECRET`. Toutes les routes API passent par le décorateur `@require_jwt`, qui vérifie l’en-tête `Authorization: Bearer <token>`. En local, ces variables ne sont pas définies pour simplifier les tests.
 
 ## 6. Pistes d’évolution
 
