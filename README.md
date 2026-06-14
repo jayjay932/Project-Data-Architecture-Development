@@ -20,6 +20,7 @@ Urban Data Explorer est une application de dataviz qui aide les collectivités, 
 
 - Python 3.11+
 - Pip / virtualenv
+- MongoDB (optionnel, si vous activez le backend NoSQL)
 - (optionnel) Node/npm pour outils tiers, mais le frontend est purement statique.
 
 ## Installation & démarrage rapide
@@ -41,6 +42,30 @@ python backend/app.py
 
 L’application est accessible sur `http://localhost:8000`.  
 La documentation interactive est publiée sur `http://localhost:8000/api/docs`.
+
+## Backend MongoDB optionnel
+
+Le backend continue à fonctionner par défaut avec les CSV générés dans `data/gold_layer/`.  
+Si vous voulez servir l’API depuis MongoDB :
+
+```bash
+# 1. Générer les fichiers gold
+python etl/aggregate.py
+
+# 2. Charger la gold dans MongoDB
+python etl/load_mongodb.py --drop
+
+# 3. Activer MongoDB pour l’API
+export UDE_DATA_BACKEND=mongodb
+export MONGODB_URI=mongodb://localhost:27017
+export MONGODB_DB=urban_data_explorer
+export MONGODB_COLLECTION=metrics_yearly
+
+# 4. Lancer l’API
+python backend/app.py
+```
+
+Le script `etl/load_mongodb.py` crée un index unique sur `(code_commune, year)` et charge aussi les documents agrégés `code_commune="all"` utilisés par les endpoints Paris global.
 
 ## Consommation API rapide
 

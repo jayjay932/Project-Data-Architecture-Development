@@ -12,6 +12,7 @@ __pycache__/
 # Local environment/config secrets
 .env
 .env.*
+!.env.example
 *.local
 
 # Node/Web build outputs

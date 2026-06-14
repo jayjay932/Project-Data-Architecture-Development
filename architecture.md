@@ -46,7 +46,9 @@ Ce document décrit l’architecture logicielle de **Urban Data Explorer** ainsi
 ## 3. Backend
 
 - Framework : **Flask**, CORS activé.
-- Cache in-memory (Python) pour `PRICE_DATA`, `METRICS_BY_KEY`, `CITY_METRICS`.
+- Backend de données sélectionnable via `UDE_DATA_BACKEND` :
+  - `csv` (défaut) : lecture de `data/gold_layer/*.csv` + cache in-memory Python.
+  - `mongodb` : lecture de la collection `metrics_yearly`, alimentée par `etl/load_mongodb.py`.
 - Endpoints principaux :
   - `/api/price`, `/api/price/history`
   - `/api/metrics`, `/api/typology`, `/api/surfaces`

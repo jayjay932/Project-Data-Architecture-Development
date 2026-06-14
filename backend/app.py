@@ -7,11 +7,17 @@ import os
 from collections import Counter
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import jwt
 from flask import Flask, abort, jsonify, request, send_from_directory, Response
 from flask_cors import CORS
+
+try:
+    from pymongo import ASCENDING, MongoClient
+except ImportError:
+    ASCENDING = 1
+    MongoClient = None
 
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "gold_layer"
@@ -66,6 +72,11 @@ REQUIRE_AUTH = os.getenv("UDE_REQUIRE_AUTH", "0").lower() in {"1", "true", "yes"
 API_SECRET = os.getenv("UDE_API_SECRET")
 if REQUIRE_AUTH and not API_SECRET:
     raise RuntimeError("UDE_REQUIRE_AUTH=1 mais UDE_API_SECRET est manquant.")
+
+DATA_BACKEND = os.getenv("UDE_DATA_BACKEND", "csv").strip().lower()
+MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+MONGODB_DB = os.getenv("MONGODB_DB", "urban_data_explorer")
+MONGODB_COLLECTION = os.getenv("MONGODB_COLLECTION", "metrics_yearly")
 
 
 def _extract_bearer_token() -> Optional[str]:
@@ -403,6 +414,162 @@ def build_city_metrics(
     return city_metrics
 
 
+def metric_entry_from_mapping(data: Dict[str, Any]) -> MetricEntry:
+    return MetricEntry(
+        code_commune=str(data["code_commune"]),
+        year=int(data["year"]),
+        prix_m2_median=parse_optional_float(data.get("prix_m2_median")),
+        prix_m2_median_prev_year=parse_optional_float(
+            data.get("prix_m2_median_prev_year")
+        ),
+        variation=parse_optional_float(data.get("variation")),
+        revenu_median=parse_optional_float(data.get("revenu_median")),
+        tx_logement_sociaux=parse_optional_float(data.get("tx_logement_sociaux")),
+        air_quality_global=parse_optional_string(data.get("air_quality_global")),
+        densite_population=parse_optional_float(data.get("densite_population")),
+        no2=parse_optional_float(data.get("no2")),
+        o3=parse_optional_float(data.get("o3")),
+        pm10=parse_optional_float(data.get("pm10")),
+        qual_no2=parse_optional_string(data.get("qual_no2")),
+        qual_o3=parse_optional_string(data.get("qual_o3")),
+        qual_pm10=parse_optional_string(data.get("qual_pm10")),
+        transactions_total=parse_optional_int(data.get("transactions_total")),
+        transactions_studio_t1=parse_optional_int(data.get("transactions_studio_t1")),
+        transactions_t2=parse_optional_int(data.get("transactions_t2")),
+        transactions_t3=parse_optional_int(data.get("transactions_t3")),
+        transactions_t4=parse_optional_int(data.get("transactions_t4")),
+        transactions_t5_plus=parse_optional_int(data.get("transactions_t5_plus")),
+        part_studio_t1=parse_optional_float(data.get("part_studio_t1")),
+        part_t2=parse_optional_float(data.get("part_t2")),
+        part_t3=parse_optional_float(data.get("part_t3")),
+        part_t4=parse_optional_float(data.get("part_t4")),
+        part_t5_plus=parse_optional_float(data.get("part_t5_plus")),
+        transactions_surface_lt_20=parse_optional_int(
+            data.get("transactions_surface_lt_20")
+        ),
+        transactions_surface_bt_20_40=parse_optional_int(
+            data.get("transactions_surface_bt_20_40")
+        ),
+        transactions_surface_bt_40_60=parse_optional_int(
+            data.get("transactions_surface_bt_40_60")
+        ),
+        transactions_surface_bt_60_80=parse_optional_int(
+            data.get("transactions_surface_bt_60_80")
+        ),
+        transactions_surface_bt_80_120=parse_optional_int(
+            data.get("transactions_surface_bt_80_120")
+        ),
+        transactions_surface_gt_120=parse_optional_int(
+            data.get("transactions_surface_gt_120")
+        ),
+        part_surface_lt_20=parse_optional_float(data.get("part_surface_lt_20")),
+        part_surface_bt_20_40=parse_optional_float(
+            data.get("part_surface_bt_20_40")
+        ),
+        part_surface_bt_40_60=parse_optional_float(
+            data.get("part_surface_bt_40_60")
+        ),
+        part_surface_bt_60_80=parse_optional_float(
+            data.get("part_surface_bt_60_80")
+        ),
+        part_surface_bt_80_120=parse_optional_float(
+            data.get("part_surface_bt_80_120")
+        ),
+        part_surface_gt_120=parse_optional_float(data.get("part_surface_gt_120")),
+    )
+
+
+class CsvDataStore:
+    def __init__(self, price_csv_path: Path, metrics_csv_path: Path):
+        self.price_data = load_price_data(price_csv_path)
+        self.metrics_by_key = load_all_metrics(metrics_csv_path)
+        self.city_metrics = build_city_metrics(self.metrics_by_key, self.price_data)
+
+    def get_price_by_year(self, year: int) -> Optional[PriceEntry]:
+        return self.price_data.get(year)
+
+    def get_metric_entry(self, code_commune: str, year: int) -> Optional[MetricEntry]:
+        if code_commune == "all":
+            return self.city_metrics.get(year)
+        return self.metrics_by_key.get((code_commune, year))
+
+    def get_price_history(self, code_commune: str) -> List[PriceEntry]:
+        if code_commune == "all":
+            entries = [
+                PriceEntry(year=year, median_price_per_sqm=entry.prix_m2_median)
+                for year, entry in sorted(self.city_metrics.items())
+                if entry.prix_m2_median is not None
+            ]
+            return entries
+
+        history = []
+        for (code, year), entry in sorted(
+            self.metrics_by_key.items(), key=lambda item: item[0][1]
+        ):
+            if code != code_commune or entry.prix_m2_median is None:
+                continue
+            history.append(
+                PriceEntry(year=year, median_price_per_sqm=entry.prix_m2_median)
+            )
+        return history
+
+
+class MongoDataStore:
+    def __init__(self, uri: str, database_name: str, collection_name: str):
+        if MongoClient is None:
+            raise RuntimeError(
+                "Le backend MongoDB requiert pymongo. Installez les dépendances de requirements.txt."
+            )
+
+        self.client = MongoClient(uri, serverSelectionTimeoutMS=5000)
+        self.client.admin.command("ping")
+        self.collection = self.client[database_name][collection_name]
+
+    def get_price_by_year(self, year: int) -> Optional[PriceEntry]:
+        document = self.collection.find_one(
+            {"code_commune": "all", "year": year},
+            {"_id": 0, "year": 1, "prix_m2_median": 1},
+        )
+        if not document:
+            return None
+        price_value = parse_optional_float(document.get("prix_m2_median"))
+        if price_value is None:
+            return None
+        return PriceEntry(year=int(document["year"]), median_price_per_sqm=price_value)
+
+    def get_metric_entry(self, code_commune: str, year: int) -> Optional[MetricEntry]:
+        document = self.collection.find_one(
+            {"code_commune": code_commune, "year": year},
+            {"_id": 0},
+        )
+        if not document:
+            return None
+        return metric_entry_from_mapping(document)
+
+    def get_price_history(self, code_commune: str) -> List[PriceEntry]:
+        cursor = self.collection.find(
+            {"code_commune": code_commune, "prix_m2_median": {"$ne": None}},
+            {"_id": 0, "year": 1, "prix_m2_median": 1},
+        ).sort("year", ASCENDING)
+        return [
+            PriceEntry(
+                year=int(document["year"]),
+                median_price_per_sqm=float(document["prix_m2_median"]),
+            )
+            for document in cursor
+        ]
+
+
+def create_data_store():
+    if DATA_BACKEND == "csv":
+        return CsvDataStore(PRICE_DATA_PATH, ALL_DATA_PATH)
+    if DATA_BACKEND == "mongodb":
+        return MongoDataStore(MONGODB_URI, MONGODB_DB, MONGODB_COLLECTION)
+    raise RuntimeError(
+        f"Backend de données inconnu: {DATA_BACKEND}. Utilisez 'csv' ou 'mongodb'."
+    )
+
+
 def arrondissement_number_to_code(number: int) -> str:
     return f"751{number:02d}"
 
@@ -437,9 +604,7 @@ def normalize_arrondissement_code(raw_value: str) -> Optional[str]:
 
 app = Flask(__name__)
 CORS(app)
-PRICE_DATA = load_price_data(PRICE_DATA_PATH)
-METRICS_BY_KEY = load_all_metrics(ALL_DATA_PATH)
-CITY_METRICS = build_city_metrics(METRICS_BY_KEY, PRICE_DATA)
+DATA_STORE = create_data_store()
 SWAGGER_SPEC = {
     "openapi": "3.0.3",
     "info": {
@@ -754,7 +919,7 @@ def get_price_by_year():
     if year_param is None:
         return jsonify({"error": "Paramètre 'year' requis (ex: /api/price?year=2022)."}), 400
 
-    entry = PRICE_DATA.get(year_param)
+    entry = DATA_STORE.get_price_by_year(year_param)
     if not entry:
         return jsonify({"error": f"Aucune donnée trouvée pour {year_param}."}), 404
 
@@ -817,27 +982,15 @@ def get_price_history():
             400,
         )
 
-    if normalized_code == "all":
-        entries = sorted(CITY_METRICS.items())
-        label = CITY_LABEL
-    else:
-        label = ARRONDISSEMENTS.get(normalized_code)
-        entries = sorted(
-            (
-                (year, entry)
-                for (code, year), entry in METRICS_BY_KEY.items()
-                if code == normalized_code
-            ),
-            key=lambda item: item[0],
-        )
+    label = CITY_LABEL if normalized_code == "all" else ARRONDISSEMENTS.get(normalized_code)
+    entries = DATA_STORE.get_price_history(normalized_code)
 
     history = [
         {
-            "year": year,
-            "median_price_per_sqm": entry.prix_m2_median,
+            "year": entry.year,
+            "median_price_per_sqm": entry.median_price_per_sqm,
         }
-        for year, entry in entries
-        if entry.prix_m2_median is not None
+        for entry in entries
     ]
     if not history:
         return jsonify({"error": "Aucune donnée trouvée pour ces paramètres."}), 404
@@ -860,11 +1013,7 @@ def get_metrics():
     if normalized_code is None:
         return jsonify({"error": f"Arrondissement inconnu: {arrondissement_param}"}), 400
 
-    if normalized_code == "all":
-        entry = CITY_METRICS.get(year_param)
-    else:
-        entry = METRICS_BY_KEY.get((normalized_code, year_param))
-
+    entry = DATA_STORE.get_metric_entry(normalized_code, year_param)
     if not entry:
         return jsonify({"error": "Aucune donnée trouvée pour ces paramètres."}), 404
 
@@ -890,11 +1039,7 @@ def get_typology_breakdown():
     if normalized_code is None:
         return jsonify({"error": f"Arrondissement inconnu: {arrondissement_param}"}), 400
 
-    if normalized_code == "all":
-        entry = CITY_METRICS.get(year_param)
-    else:
-        entry = METRICS_BY_KEY.get((normalized_code, year_param))
-
+    entry = DATA_STORE.get_metric_entry(normalized_code, year_param)
     if not entry:
         return jsonify({"error": "Aucune donnée trouvée pour ces paramètres."}), 404
 
@@ -943,11 +1088,7 @@ def get_surface_breakdown():
     if normalized_code is None:
         return jsonify({"error": f"Arrondissement inconnu: {arrondissement_param}"}), 400
 
-    if normalized_code == "all":
-        entry = CITY_METRICS.get(year_param)
-    else:
-        entry = METRICS_BY_KEY.get((normalized_code, year_param))
-
+    entry = DATA_STORE.get_metric_entry(normalized_code, year_param)
     if not entry:
         return jsonify({"error": "Aucune donnée trouvée pour ces paramètres."}), 404
 
