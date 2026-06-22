@@ -1,90 +1,217 @@
 # Architecture & Data Flow
 
-Ce document décrit l’architecture logicielle de **Urban Data Explorer** ainsi que les transformations de données.
+Ce document décrit l'architecture logicielle actuelle de **Urban Data Explorer** après l'ajout du backend NoSQL optionnel.
 
-## 1. Vision générale
+## 1. Vue d'ensemble
 
+Le projet repose sur une logique simple :
+
+1. Les données brutes sont nettoyées dans l'ETL.
+2. Les données nettoyées sont agrégées dans une couche `gold`.
+3. La couche `gold` est servie par l'API Flask.
+4. L'API peut lire soit les CSV `gold`, soit MongoDB.
+5. Le frontend consomme l'API pour afficher la carte, les KPI et les graphiques.
+
+## 2. Schéma global
+
+```text
+                   +-------------------+        +------------------+
+                   |  Données Bronze   |        |   Référentiels   |
+                   |  (DVF, INSEE, …)  |        |  (Air, Surface)  |
+                   +---------+---------+        +--------+---------+
+                             |                           |
+                             v                           v
+                        etl/clean.py          etl/clean.py (sections dédiées)
+                             \_____________________ ___________________/
+                                                   v
+                                      Données Silver (CSV nettoyés)
+                                                   |
+                                                   v
+                                           etl/aggregate.py
+                                                   |
+                             +---------------------+---------------------+
+                             |                                           |
+                             v                                           v
+                data/gold_layer/all_data.csv                 data/gold_layer/price_year.csv
+                             |                                           |
+                             +---------------------+---------------------+
+                                                   |
+                                                   v
+                                        etl/load_mongodb.py
+                                                   |
+                                                   v
+                           MongoDB `urban_data_explorer.metrics_yearly`
+                                                   |
+                              +--------------------+--------------------+
+                              |                                         |
+                              v                                         v
+                 CsvDataStore (par défaut)                 MongoDataStore (optionnel)
+                              \____________________  ____________________/
+                                                   v
+                                      backend/app.py (Flask API)
+                                                   |
+                                                   v
+                                 frontend (HTML/CSS/JS + MapLibre)
 ```
-           +-------------------+        +------------------+
-           |  Données Bronze   |        |   Référentiels   |
-           |  (DVF, INSEE, …)  |        |  (Surface, Air)  |
-           +---------+---------+        +--------+---------+
-                     |                           |
-                     v                           v
-              etl/clean.py              etl/clean.py (sections dédiées)
-                     \_____________________ ___________________/
-                                           V
-                                 Données Silver (tables nettoyées)
-                                           |
-                                           v
-                                   etl/aggregate.py
-                                           |
-                                           v
-                              data/gold_layer/all_data.csv
-                                           |
-                                           v
-                           backend/app.py (API Flask + Swagger)
-                                           |
-                                           v
-                         frontend (HTML/CSS/JS & MapLibre)
+
+## 3. Couches de données
+
+| Couche | Emplacement | Rôle |
+|--------|-------------|------|
+| Bronze | `data/bronze_layer/` | Données brutes source : DVF, INSEE, qualité de l'air, géographie. |
+| Silver | `data/silver_layer/` | Jeux nettoyés et harmonisés, prêts pour l'agrégation. |
+| Gold | `data/gold_layer/all_data.csv`, `data/gold_layer/price_year.csv` | Jeux agrégés utilisés pour servir le dashboard. |
+| Read model NoSQL | MongoDB `metrics_yearly` | Projection documentaire de la `gold`, optimisée pour la lecture applicative. |
+
+### Position du NoSQL
+
+MongoDB n'est pas utilisé comme couche `bronze`, `silver` ou `gold`.
+
+Il est placé **après la gold**, dans une couche de **serving / lecture applicative** :
+
+- la `gold` reste la source agrégée produite par l'ETL
+- `etl/load_mongodb.py` transforme cette `gold` en documents MongoDB
+- l'API Flask peut ensuite lire ces documents à la place des CSV
+
+C'est ce choix qui évite de dupliquer toute la logique métier de nettoyage et d'agrégation dans MongoDB.
+
+## 4. Flux de traitement
+
+### 4.1 ETL
+
+- `etl/clean.py` nettoie les données brutes et produit les fichiers `silver`
+- `etl/aggregate.py` calcule les agrégats métier et produit :
+  - `data/gold_layer/all_data.csv`
+  - `data/gold_layer/price_year.csv`
+
+### 4.2 Chargement MongoDB
+
+- `etl/load_mongodb.py` lit les fichiers `gold`
+- chaque document représente un couple `(code_commune, year)`
+- le script génère aussi les documents `code_commune = "all"` pour Paris global
+- un index unique est créé sur `(code_commune, year)`
+
+### 4.3 Serving API
+
+Le backend choisit sa source avec `UDE_DATA_BACKEND` :
+
+- `csv` : lecture directe des fichiers `gold`
+- `mongodb` : lecture de la collection `metrics_yearly`
+
+## 5. Backend
+
+Le backend principal est [backend/app.py](backend/app.py).
+
+### 5.1 Rôle
+
+- exposer les endpoints REST consommés par le frontend
+- normaliser les paramètres fonctionnels, notamment les arrondissements
+- retourner un format JSON stable pour les KPI, les courbes et les répartitions
+- basculer entre backend `csv` et backend `mongodb`
+
+### 5.2 Stores de données
+
+Deux implémentations coexistent :
+
+- `CsvDataStore`
+  - charge `all_data.csv` et `price_year.csv`
+  - calcule les métriques `Paris (all)` en mémoire
+- `MongoDataStore`
+  - lit les documents de la collection MongoDB
+  - récupère directement les métriques par arrondissement et par année
+
+Le choix se fait via :
+
+```bash
+UDE_DATA_BACKEND=csv
+UDE_DATA_BACKEND=mongodb
 ```
 
-## 2. Couches de données
+Variables associées :
 
-| Couche  | Dossier                                | Description |
-|--------|-----------------------------------------|-------------|
-| Bronze | `data/bronze_layer/`                    | Extractions brutes (DVF 2020‑2025, socio-éco, qualité de l’air) au format CSV. |
-| Silver | `data/silver_layer/`                    | Données nettoyées, normalisées (codes INSEE, surfaces filtrées, indicateurs calculés). |
-| Gold   | `data/gold_layer/all_data.csv`          | Table large par `(code_commune, annee)` avec toutes les métriques et parts (typologies, surfaces). Utilisée directement par l’API. |
+```bash
+MONGODB_URI=mongodb://localhost:27017
+MONGODB_DB=urban_data_explorer
+MONGODB_COLLECTION=metrics_yearly
+```
 
-### Transformations clefs
+### 5.3 Endpoints principaux
 
-- **Nettoyage DVF** : suppression des surfaces aberrantes, calcul du prix/m², typologie via `nombre_pieces_principales`.
-- **Agrégation** : médian prix, variation vs N‑1, parts typologiques/surfaces, somme des transactions, fusion des indicateurs socio-économiques (revenu médian, logements sociaux, densité, qualité de l’air).
-- **City Metrics** : calculés dans `backend/app.py` en sommant tous les arrondissements, utilisés pour les vues “Paris (all)”.
+- `/api/price`
+- `/api/price/history`
+- `/api/metrics`
+- `/api/typology`
+- `/api/surfaces`
+- `/api/arrondissements`
+- `/api/arrondissements.geojson`
+- `/api/docs`
+- `/api/docs.json`
 
-## 3. Backend
+## 6. Frontend
 
-- Framework : **Flask**, CORS activé.
-- Backend de données sélectionnable via `UDE_DATA_BACKEND` :
-  - `csv` (défaut) : lecture de `data/gold_layer/*.csv` + cache in-memory Python.
-  - `mongodb` : lecture de la collection `metrics_yearly`, alimentée par `etl/load_mongodb.py`.
-- Endpoints principaux :
-  - `/api/price`, `/api/price/history`
-  - `/api/metrics`, `/api/typology`, `/api/surfaces`
-  - `/api/arrondissements`, `/api/arrondissements.geojson`
-  - `/api/docs` (Swagger UI) + `/api/docs.json` (OpenAPI)
-- Validation : `normalize_arrondissement_code` accepte codes, libellés ou “all”.
-- Swagger : défini dans `SWAGGER_SPEC` et servi via un bundle standalone.
+Le frontend est statique et vit dans :
 
-## 4. Frontend
+- `frontend/index.html`
+- `frontend/style.css`
+- `frontend/app.js`
 
-- Fichiers : `frontend/index.html`, `frontend/style.css`, `frontend/app.js`.
-- **Vue d’ensemble** : Carte MapLibre + popups, KPI, graphe typologie, graphe surfaces.
-- **Comparaison** : filtres année/arrondissements, cartes A/B, ligne prix, radar multi-axes (canvas custom).
-- **Données** : tableau statique.
+### Responsabilités
 
-### Modules JS (extraits)
+- afficher la carte des arrondissements via MapLibre
+- charger les KPI depuis l'API
+- afficher les graphes de typologie, surface et historique de prix
+- permettre une comparaison A/B entre arrondissements
 
-| Module | Description |
-|--------|-------------|
-| `initializeMap` | MapLibre + survols & popups (fetch API). |
-| `loadMetrics`   | Chargement des KPI via `/api/metrics`. |
-| `renderTypologyChart` / `renderSurfaceChart` | Graphiques canvas + tooltips. |
-| `loadPriceTrendHistory` | Graphe ligne “Évolution du prix” filtré par année/arrondissement. |
-| `renderComparisonRadar` | Radar multi-axes (prix, revenus, densité, transactions, log. sociaux). |
-| Caches (`metricsCache`, `typologyCache`, …) | évitent les rechargements inutiles. |
+### Dépendance API
 
-## 5. Sécurité & performances
+Le frontend consomme les routes Flask pour toutes les données dynamiques.
 
-- **Front** : pas de dépendances lourdes (MapLibre + canvas custom), rendant l’UI rapide.
-- **Back** : aucune base de données, lecture depuis CSV gold. Idéal pour POC/atelier, mais peut être migré vers une base si le volume augmente.
-- **Swagger** facilite la découverte API et la gouvernance.
-- **Authentification JWT** : activable via `UDE_REQUIRE_AUTH=1` + `UDE_API_SECRET`. Toutes les routes API passent par le décorateur `@require_jwt`, qui vérifie l’en-tête `Authorization: Bearer <token>`. En local, ces variables ne sont pas définies pour simplifier les tests.
+En pratique :
 
-## 6. Pistes d’évolution
+- la carte charge `arrondissements.geojson`
+- les KPI chargent `/api/metrics`
+- les graphes chargent `/api/typology`, `/api/surfaces` et `/api/price/history`
 
-- Brancher un scheduler pour régénérer la couche gold (Airflow / Prefect).
-- Ajouter une vraie base (PostgreSQL/PostGIS) pour gérer l’historique et les jointures.
-- Internationalisation du frontend.
-- Authentification (JWT) si ouverture publique.
+## 7. Sécurité et performance
+
+### Sécurité
+
+- authentification JWT optionnelle via `UDE_REQUIRE_AUTH=1`
+- secret applicatif configuré par `UDE_API_SECRET`
+- validation des paramètres côté backend
+
+### Performance
+
+- mode `csv` :
+  - très simple à démarrer
+  - adapté au POC et aux faibles volumes
+  - dépend d'un chargement mémoire au démarrage
+- mode `mongodb` :
+  - mieux adapté à une lecture applicative persistante
+  - permet de découpler l'API de la lecture directe des fichiers
+  - prépare le projet à une montée en charge ou à des enrichissements futurs
+
+## 8. Pourquoi cette architecture
+
+Cette architecture garde l'ETL lisible et reproductible, tout en ajoutant une couche NoSQL utile sans casser l'existant.
+
+Le choix MongoDB a été fait pour trois raisons :
+
+- les données du dashboard sont déjà agrégées et se prêtent bien à un modèle documentaire
+- l'API lit surtout des objets par `(code_commune, year)`, ce qui correspond bien à MongoDB
+- le backend peut évoluer vers une base de lecture sans refondre les pipelines `bronze/silver/gold`
+
+## 9. Limites actuelles
+
+- le frontend dépend encore d'une URL API locale
+- la `gold` CSV reste la source de vérité de l'agrégation
+- MongoDB est un read model, pas un moteur de transformation métier
+- l'architecture ne gère pas encore l'orchestration planifiée de l'ETL
+
+## 10. Pistes d'évolution
+
+- scheduler ETL avec Airflow ou Prefect
+- externaliser davantage la configuration applicative
+- rendre l'URL API frontend configurable
+- ajouter des tests d'intégration `csv` et `mongodb`
+- étudier PostgreSQL/PostGIS si les besoins analytiques et géospatiaux deviennent plus complexes
