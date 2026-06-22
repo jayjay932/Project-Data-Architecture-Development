@@ -1,0 +1,20 @@
+{"arrondissement": 1, "metro": {"nb_stations": 7, "trafic_annuel": 33194770, "lignes": ["1", "4", "7", "11", "14"]}, "rer": {"nb_lignes": 2, "lignes": ["A", "B"]}}
+{"arrondissement": 2, "metro": {"nb_stations": 4, "trafic_annuel": 10127675, "lignes": ["3", "4", "8", "9"]}, "rer": {"nb_lignes": 0, "lignes": []}}
+{"arrondissement": 3, "metro": {"nb_stations": 6, "trafic_annuel": 12577486, "lignes": ["3", "4", "8", "11"]}, "rer": {"nb_lignes": 0, "lignes": []}}
+{"arrondissement": 4, "metro": {"nb_stations": 6, "trafic_annuel": 15966790, "lignes": ["1", "4", "7", "11"]}, "rer": {"nb_lignes": 0, "lignes": []}}
+{"arrondissement": 5, "metro": {"nb_stations": 5, "trafic_annuel": 10301086, "lignes": ["4", "7", "10"]}, "rer": {"nb_lignes": 1, "lignes": ["B"]}}
+{"arrondissement": 6, "metro": {"nb_stations": 9, "trafic_annuel": 17494023, "lignes": ["4", "7", "10", "12"]}, "rer": {"nb_lignes": 0, "lignes": []}}
+{"arrondissement": 7, "metro": {"nb_stations": 11, "trafic_annuel": 19713267, "lignes": ["8", "10", "12", "13"]}, "rer": {"nb_lignes": 0, "lignes": []}}
+{"arrondissement": 8, "metro": {"nb_stations": 15, "trafic_annuel": 72710440, "lignes": ["1", "2", "3", "6", "8", "9", "12", "13", "14", "3bis"]}, "rer": {"nb_lignes": 0, "lignes": []}}
+{"arrondissement": 9, "metro": {"nb_stations": 13, "trafic_annuel": 39341123, "lignes": ["2", "3", "6", "7", "8", "9", "12"]}, "rer": {"nb_lignes": 1, "lignes": ["A"]}}
+{"arrondissement": 10, "metro": {"nb_stations": 10, "trafic_annuel": 72632038, "lignes": ["2", "4", "5", "7", "8", "9", "11", "7bis"]}, "rer": {"nb_lignes": 1, "lignes": ["B"]}}
+{"arrondissement": 11, "metro": {"nb_stations": 16, "trafic_annuel": 42107896, "lignes": ["2", "3", "5", "8", "9", "11"]}, "rer": {"nb_lignes": 0, "lignes": []}}
+{"arrondissement": 12, "metro": {"nb_stations": 19, "trafic_annuel": 81777670, "lignes": ["1", "2", "5", "6", "8", "9", "14", "A"]}, "rer": {"nb_lignes": 1, "lignes": ["A"]}}
+{"arrondissement": 13, "metro": {"nb_stations": 18, "trafic_annuel": 54466958, "lignes": ["5", "6", "7", "10", "14"]}, "rer": {"nb_lignes": 0, "lignes": []}}
+{"arrondissement": 14, "metro": {"nb_stations": 12, "trafic_annuel": 46001488, "lignes": ["4", "6", "12", "13"]}, "rer": {"nb_lignes": 1, "lignes": ["B"]}}
+{"arrondissement": 15, "metro": {"nb_stations": 19, "trafic_annuel": 42680563, "lignes": ["6", "8", "10", "12"]}, "rer": {"nb_lignes": 0, "lignes": []}}
+{"arrondissement": 16, "metro": {"nb_stations": 20, "trafic_annuel": 38588088, "lignes": ["1", "2", "6", "9", "10"]}, "rer": {"nb_lignes": 0, "lignes": []}}
+{"arrondissement": 17, "metro": {"nb_stations": 16, "trafic_annuel": 41622120, "lignes": ["1", "2", "3", "13", "14"]}, "rer": {"nb_lignes": 1, "lignes": ["A"]}}
+{"arrondissement": 18, "metro": {"nb_stations": 13, "trafic_annuel": 41870261, "lignes": ["2", "4", "12"]}, "rer": {"nb_lignes": 0, "lignes": []}}
+{"arrondissement": 19, "metro": {"nb_stations": 15, "trafic_annuel": 32408205, "lignes": ["2", "5", "7", "11", "7bis"]}, "rer": {"nb_lignes": 0, "lignes": []}}
+{"arrondissement": 20, "metro": {"nb_stations": 11, "trafic_annuel": 26999499, "lignes": ["2", "3", "9", "11", "3bis"]}, "rer": {"nb_lignes": 0, "lignes": []}}

@@ -4,6 +4,11 @@ Controller pour les endpoints liés aux logements (sociaux, typologie)
 from flask import Blueprint, request
 import logging
 
+
+from models.arrondissement import Arrondissement
+from backend.services.old_data_loader import DataLoader
+from views.response_formatter import format_response, format_error, format_not_found
+
 logger = logging.getLogger(__name__)
 
 # Création du Blueprint

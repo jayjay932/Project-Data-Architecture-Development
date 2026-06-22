@@ -183,7 +183,6 @@ class Arrondissement:
         """
         result = {}
         
-        # Types principaux
         for type_local in ['appartement', 'maison', 'dependance', 'local_industriel_commercial_ou_assimile']:
             nb_key = f'nb_{type_local}_{annee}'
             pct_key = f'pct_{type_local}_{annee}'
@@ -197,7 +196,7 @@ class Arrondissement:
                     'pourcentage': pct
                 }
         
-        # Type dominant
+        # Type dominant par année
         type_dominant_key = f'type_dominant_{annee}'
         result['type_dominant'] = self._data.get(type_dominant_key)
         
@@ -266,21 +265,48 @@ class Arrondissement:
         }
     
     # ========================================================================
-    # DÉMOGRAPHIE
+    # DÉMOGRAPHIE — MIS À JOUR avec données INSEE 2022 + revenus
     # ========================================================================
     
     def get_demographie(self) -> Dict[str, Any]:
         """
-        Retourne les données démographiques
+        Retourne les données démographiques réelles (INSEE 2022)
         
         Returns:
-            Dictionnaire avec population, ménages, logements
+            Dictionnaire avec population, ménages, logements, densité, revenus
         """
         return {
-            'population_2018': self._data.get('population_2018'),
-            'nb_menages_2018': self._data.get('nb_menages_2018'),
-            'nb_logements_2018': self._data.get('nb_logements_2018'),
+            'population_2022': self._data.get('population_2022'),
+            'nb_menages_2022': self._data.get('nb_menages_2022'),
+            'nb_logements_2022': self._data.get('nb_logements_2022'),
+            'superficie_km2': self._data.get('superficie_km2'),
+            'densite_pop_km2': self._data.get('densite_pop_km2'),
+            'revenu_median': self._data.get('revenu_median'),
             'prix_m2_stats_2020': self._data.get('prix_m2_stats_2020')
+        }
+    
+    # ========================================================================
+    # INDICATEURS COMPOSITES — NOUVEAU
+    # ========================================================================
+    
+    def get_indicateurs_composites(self) -> Dict[str, Any]:
+        """
+        Retourne les 4 indicateurs composites calculés
+        
+        Returns:
+            Dictionnaire avec les 4 indices (score 0-10)
+            - indice_accessibilite     : accessibilité prix vs revenus (10 = très accessible)
+            - indice_tension_sociale   : fracture sociale prix vs logements sociaux (10 = forte fracture)
+            - indice_attractivite      : attractivité transport + prix (10 = très attractif)
+            - indice_pression_immo     : pression immobilière marché (10 = forte pression)
+            - ratio_effort_achat       : nb années de revenu pour acheter 50m²
+        """
+        return {
+            'indice_accessibilite': self._data.get('indice_accessibilite'),
+            'indice_tension_sociale': self._data.get('indice_tension_sociale'),
+            'indice_attractivite': self._data.get('indice_attractivite'),
+            'indice_pression_immo': self._data.get('indice_pression_immo'),
+            'ratio_effort_achat': self._data.get('ratio_effort_achat')
         }
     
     # ========================================================================
@@ -310,7 +336,9 @@ class Arrondissement:
             'prix_median_2024': self.get_prix_median(2024),
             'logements_sociaux': self.get_logements_sociaux_apur(),
             'transport': self.get_transport(),
-            'qualite_air': self.get_qualite_air()
+            'qualite_air': self.get_qualite_air(),
+            'demographie': self.get_demographie(),
+            'indicateurs': self.get_indicateurs_composites()
         }
     
     def __repr__(self) -> str:

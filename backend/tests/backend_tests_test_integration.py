@@ -3,7 +3,7 @@ Tests d'intégration pour l'application complète
 """
 import pytest
 from backend.app import create_app
-from backend.services.data_loader import DataLoader
+from backend.services.old_data_loader import DataLoader
 
 
 @pytest.fixture
