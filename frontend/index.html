@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Immobilier - Paris</title>
+    <title>Urban Data Explorer - Paris</title>
     
     <!-- MapLibre GL CSS -->
     <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
@@ -14,8 +14,8 @@
 <body>
     <!-- En-tête -->
     <header class="header">
-        <h1>Dashboard Immobilier - Paris</h1>
-        <p>Analyse par arrondissement</p>
+        <h1>🏙️ Urban Data Explorer — Paris</h1>
+        <p>Explorer, comprendre et comparer les dynamiques du logement au cœur de Paris</p>
     </header>
 
     <!-- Panneau de contrôle -->
@@ -26,38 +26,67 @@
         <div class="control-group">
             <label for="metric-select">Métrique à afficher</label>
             <select id="metric-select">
-                <optgroup label="Prix & Marché">
+
+                <optgroup label="💰 Prix & Marché">
                     <option value="prix_m2_median_2024">Prix/m² médian 2024</option>
                     <option value="prix_median_2024">Prix médian 2024</option>
-                    <option value="evolution_prix_2020_2024_pct">Évolution 2020-2024</option>
+                    <option value="evolution_prix_2020_2024_pct">Évolution prix 2020-2024</option>
+                    <option value="evolution_prix_m2_2023_2024_pct">Évolution prix/m² 2023-2024</option>
                     <option value="tendance_prix_m2">Tendance du marché</option>
+                    <option value="nb_ventes_2024">Nombre de ventes 2024</option>
+                    <option value="volatilite_prix_m2">Volatilité prix/m²</option>
                 </optgroup>
-                <optgroup label="Logements">
-                    <option value="nb_appartements_2024">Nombre d'appartements</option>
-                    <option value="pct_T1_2024">Part de T1</option>
+
+                <optgroup label="🏠 Logements">
+                    <option value="nb_appartements_2024">Nombre d'appartements 2024</option>
+                    <option value="pct_T1_2024">Part de T1 (studios)</option>
                     <option value="pct_T2_2024">Part de T2</option>
                     <option value="pct_T3_2024">Part de T3</option>
-                    <option value="nb_logements_sociaux_apur">Logements sociaux (APUR)</option>
-                    <option value="part_logements_sociaux_apur_pct">Logements sociaux (% APUR)</option>
-                    <option value="estimation_logement_social_pct">Logements sociaux (estimation)</option>
+                    <option value="pct_T4_2024">Part de T4</option>
+                    <option value="pct_T5plus_2024">Part de T5+</option>
+                    <option value="nb_pieces_moyen">Nb pièces moyen</option>
                 </optgroup>
-                <optgroup label="Transport">
+
+                <optgroup label="🏢 Logements Sociaux">
+                    <option value="nb_logements_sociaux_apur">Logements sociaux (nb APUR)</option>
+                    <option value="part_logements_sociaux_apur_pct">Logements sociaux (% APUR)</option>
+                </optgroup>
+
+                <optgroup label="🚇 Transport">
                     <option value="nb_stations_metro">Nombre de stations métro</option>
                     <option value="trafic_total_metro">Trafic métro total</option>
                     <option value="nb_lignes_metro">Nombre de lignes métro</option>
+                    <option value="nb_lignes_rer">Nombre de lignes RER</option>
                 </optgroup>
-                <optgroup label="Qualité de l'air">
-                    <option value="no2_moyen">NO2 moyen</option>
-                    <option value="pm10_moyen">PM10 moyen</option>
-                    <option value="o3_moyen">O3 moyen</option>
+
+                <optgroup label="🌫️ Qualité de l'air">
+                    <option value="no2_moyen">NO₂ moyen (µg/m³)</option>
+                    <option value="pm10_moyen">PM10 moyen (µg/m³)</option>
+                    <option value="o3_moyen">O₃ moyen (µg/m³)</option>
                 </optgroup>
+
+                <optgroup label="👥 Démographie">
+                    <option value="population_2022">Population 2022</option>
+                    <option value="densite_pop_km2">Densité de population</option>
+                    <option value="revenu_median">Revenu médian (€/an)</option>
+                </optgroup>
+
+                <optgroup label="📊 Indicateurs composites">
+                    <option value="indice_accessibilite">Indice d'accessibilité</option>
+                    <option value="indice_tension_sociale">Indice de tension sociale</option>
+                    <option value="indice_attractivite">Indice d'attractivité</option>
+                    <option value="indice_pression_immo">Indice de pression immobilière</option>
+                    <option value="ratio_effort_achat">Effort d'achat (années)</option>
+                </optgroup>
+
             </select>
         </div>
 
         <!-- Sélection de l'année -->
         <div class="control-group">
-            <label for="year-select">Année</label>
+            <label for="year-select">Année de référence</label>
             <select id="year-select">
+                <option value="2025">2025</option>
                 <option value="2024" selected>2024</option>
                 <option value="2023">2023</option>
                 <option value="2022">2022</option>
@@ -68,12 +97,12 @@
 
         <!-- Bouton de rafraîchissement -->
         <button id="refresh-btn" class="btn-primary">
-            Actualiser la carte
+            🔄 Actualiser la carte
         </button>
 
         <!-- Statistiques -->
         <div id="stats-panel" class="stats-panel">
-            <h3>Statistiques</h3>
+            <h3>📈 Statistiques Paris</h3>
             <div id="stats-content">
                 <p>Sélectionnez une métrique...</p>
             </div>
@@ -81,7 +110,7 @@
 
         <!-- Mode Comparaison -->
         <div class="comparison-controls">
-            <h3>📊 Mode Comparaison</h3>
+            <h3>⚖️ Mode Comparaison</h3>
             <div class="comparison-selects">
                 <div class="comparison-select-group">
                     <label for="select-arr-a">Arrondissement A</label>
@@ -137,7 +166,7 @@
                 </div>
             </div>
             <button id="btn-comparer" class="btn-primary">
-                Comparer
+                ⚖️ Comparer
             </button>
         </div>
     </aside>
@@ -172,7 +201,6 @@
     <div id="comparison-panel" class="comparison-panel hidden">
         <div id="comparison-content" style="position: relative;">
             <button id="btn-fermer-comparaison">×</button>
-            <!-- Le contenu sera injecté par JS -->
         </div>
     </div>
 

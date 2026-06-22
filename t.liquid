@@ -1,0 +1,1846 @@
+{% comment %} Précharge image principale pour LCP {% endcomment %}
+{%- assign lcp_img = product.selected_or_first_available_variant.featured_image | default: product.featured_image -%}
+{% if lcp_img %}
+  <link rel="preload" as="image"
+    href="{{ lcp_img | image_url: width: 600 }}"
+    imagesrcset="{{ lcp_img | image_url: width: 400 }} 400w, {{ lcp_img | image_url: width: 600 }} 600w"
+    imagesizes="(max-width: 600px) 100vw, 600px">
+{% endif %}
+
+{% comment %} BOOMBA product section — PREMIUM BUNDLE SELECTOR {% endcomment %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-boomba-image-card-{{ai_gen_id}},
+  .ai-boomba-thumbnails-wrapper-{{ai_gen_id}},
+  .ai-boomba-reviews-{{ai_gen_id}},
+  .ai-boomba-title-{{ai_gen_id}},
+  .ai-boomba-price-{{ai_gen_id}},
+  .ai-boomba-viewers-{{ai_gen_id}},
+  .ai-boomba-size-buttons-{{ai_gen_id}},
+  .ai-boomba-color-swatches-{{ai_gen_id}},
+  .ai-boomba-stock-{{ai_gen_id}},
+  .ai-boomba-reassurance-{{ai_gen_id}},
+  .ai-boomba-atc-wrap-{{ai_gen_id}},
+  .ai-boomba-timer-{{ai_gen_id}},
+  .ai-boomba-accordion-{{ai_gen_id}},
+  .ai-boomba-bundle-wrap-{{ai_gen_id}},
+  .ai-boomba-variant-label-{{ai_gen_id}},
+  .ai-boomba-compatibility-{{ai_gen_id}},
+  .ai-boomba-payment-strip-{{ai_gen_id}} {
+    margin-left: 4px;
+    margin-right: 4px;
+  }
+
+/* ═══ PREMIUM OFFER TITLE ═══ */
+.ai-boomba-offer-title-{{ai_gen_id}} {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 18px 4px 16px;
+}
+.ai-boomba-offer-title-{{ai_gen_id}} .line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #D9869F, transparent);
+}
+.ai-boomba-offer-title-{{ai_gen_id}} .text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 14px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #D9869F;
+  font-weight: 600;
+}
+.ai-boomba-offer-title-{{ai_gen_id}} .crown {
+  width: 16px;
+  height: 16px;
+  opacity: 0.8;
+}
+
+  .ai-boomba-image-card-{{ai_gen_id}} {
+    background-color: #F4ECEF;
+    border: 2px solid #E6A8B3;
+    border-radius: 20px;
+    padding: 20px;
+    position: relative;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .ai-boomba-main-image-{{ai_gen_id}} {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    object-fit: contain;
+    display: block;
+  }
+  .ai-boomba-main-video-{{ai_gen_id}} {
+    width: 100%;
+    height: 320px;
+    object-fit: contain;
+    display: block;
+    background: transparent;
+  }
+  .ai-boomba-thumb-wrap-{{ai_gen_id}} {
+    position: relative;
+    flex-shrink: 0;
+    width: calc((100vw - 8px - 6 * 8px) / 7.5);
+    max-width: 64px;
+    min-width: 40px;
+    height: calc((100vw - 8px - 6 * 8px) / 7.5);
+    max-height: 64px;
+    min-height: 40px;
+    scroll-snap-align: start;
+    cursor: pointer;
+  }
+  .ai-boomba-thumb-play-{{ai_gen_id}} {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .ai-boomba-thumb-play-{{ai_gen_id}} svg {
+    width: 22px;
+    height: 22px;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5));
+  }
+  .ai-boomba-thumbnails-wrapper-{{ai_gen_id}} {
+    position: relative;
+    margin-bottom: 16px;
+  }
+  .ai-boomba-thumbnails-{{ai_gen_id}} {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+  .ai-boomba-thumbnails-{{ai_gen_id}}::-webkit-scrollbar { display: none; }
+  .ai-boomba-thumbnails-fade-{{ai_gen_id}} {
+    position: absolute;
+    top: 0; right: 0;
+    width: 48px; height: 100%;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.92));
+    pointer-events: none;
+    border-radius: 0 8px 8px 0;
+  }
+  .ai-boomba-thumbnail-{{ai_gen_id}} {
+    width: calc((100vw - 8px - 6 * 8px) / 7.5);
+    max-width: 64px;
+    min-width: 40px;
+    height: calc((100vw - 8px - 6 * 8px) / 7.5);
+    max-height: 64px;
+    min-height: 40px;
+    border-radius: 8px;
+    object-fit: cover;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.2s;
+    scroll-snap-align: start;
+    flex-shrink: 0;
+    aspect-ratio: 1 / 1;
+  }
+  .ai-boomba-thumb-wrap-{{ai_gen_id}} .ai-boomba-thumbnail-{{ai_gen_id}} {
+    width: 100%;
+    height: 100%;
+  }
+  .ai-boomba-thumbnail-{{ai_gen_id}}.active { border-color: #111; }
+  .ai-boomba-reviews-{{ai_gen_id}} {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 16px;
+    margin-bottom: 16px;
+  }
+  .ai-boomba-stars-{{ai_gen_id}} { display: flex; gap: 2px; }
+  .ai-boomba-star-svg-{{ai_gen_id}} { width: 16px; height: 16px; }
+  .ai-boomba-review-count-{{ai_gen_id}} { font-size: 14px; color: #666; }
+  .ai-boomba-trust-badge-{{ai_gen_id}} {
+    display: flex;
+    align-items: center;
+    margin-left: 4px;
+    flex-shrink: 0;
+  }
+  .ai-boomba-trust-badge-{{ai_gen_id}} img {
+    height: 20px;
+    width: auto;
+    display: block;
+    object-fit: contain;
+  }
+  .ai-boomba-title-{{ai_gen_id}} {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 600;
+    font-size: 34px;
+    color: #111111;
+    margin: 10px 0;
+    line-height: 1.2;
+  }
+  .ai-boomba-price-{{ai_gen_id}} {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .ai-boomba-price-current-{{ai_gen_id}} {
+    font-size: 20px;
+    font-weight: 600;
+    color: {{ block.settings.price_color }};
+  }
+  .ai-boomba-price-compare-{{ai_gen_id}} {
+    font-size: 16px;
+    font-weight: 400;
+    color: #999;
+    text-decoration: line-through;
+  }
+  .ai-boomba-discount-badge-{{ai_gen_id}} {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #FFFFFF;
+    letter-spacing: 0.3px;
+    flex-shrink: 0;
+  }
+  .ai-boomba-viewers-{{ai_gen_id}} {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #FAFAFA;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #F0F0F0;
+  }
+  .ai-boomba-viewers-dot-{{ai_gen_id}} {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #22C55E;
+    flex-shrink: 0;
+    animation: boomba-live-pulse 2s ease-in-out infinite;
+  }
+  @keyframes boomba-live-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+    50% { opacity: 0.8; transform: scale(1.15); box-shadow: 0 0 0 5px rgba(34,197,94,0); }
+  }
+  .ai-boomba-viewers-avatars-{{ai_gen_id}} { display: flex; flex-direction: row-reverse; }
+  .ai-boomba-viewers-avatar-{{ai_gen_id}} {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 2px solid #FFFFFF;
+    background: linear-gradient(135deg, #F6B5C8, #D9869F);
+    margin-left: -7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; color: #FFF;
+    flex-shrink: 0;
+  }
+  .ai-boomba-viewers-avatar-{{ai_gen_id}}:last-child { margin-left: 0; }
+  .ai-boomba-viewers-text-{{ai_gen_id}} {
+    font-size: 12.5px; color: #666; font-weight: 400;
+    line-height: 1.3; flex: 1;
+    transition: opacity 0.3s ease;
+  }
+  .ai-boomba-viewers-text-{{ai_gen_id}}.updating { opacity: 0.4; }
+  .ai-boomba-viewers-text-{{ai_gen_id}} strong { color: #111; font-weight: 600; }
+  .ai-boomba-variant-label-{{ai_gen_id}} {
+    font-size: 14px; font-weight: 600; color: #111;
+    margin-bottom: 8px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .ai-boomba-size-guide-link-{{ai_gen_id}} { font-size: 13px; text-decoration: underline; color: #111; }
+  .ai-boomba-size-buttons-{{ai_gen_id}} { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .ai-boomba-size-button-{{ai_gen_id}} {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: 1px solid #DDD;
+    background: #FFF; color: #111; font-size: 13px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    position: relative; overflow: hidden;
+  }
+  .ai-boomba-size-button-{{ai_gen_id}}.selected { background: #111111; color: #FFFFFF; border-color: #111111; }
+  .ai-boomba-size-button-{{ai_gen_id}}.soldout,
+  .ai-boomba-color-swatch-{{ai_gen_id}}.soldout { opacity: 0.4; cursor: not-allowed; }
+  .ai-boomba-size-button-{{ai_gen_id}}.soldout::after {
+    content: '';
+    position: absolute; top: 50%; left: 50%;
+    width: 130%; height: 1.5px;
+    background: #999;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    pointer-events: none;
+  }
+  .ai-boomba-color-swatch-{{ai_gen_id}}.soldout { position: relative; }
+  .ai-boomba-color-swatch-{{ai_gen_id}}.soldout::after {
+    content: '';
+    position: absolute; top: 50%; left: 50%;
+    width: 130%; height: 1.5px;
+    background: rgba(0,0,0,0.4);
+    transform: translate(-50%, -50%) rotate(-45deg);
+    pointer-events: none; border-radius: 2px;
+  }
+  .ai-boomba-color-swatches-{{ai_gen_id}} { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+  .ai-boomba-color-swatch-{{ai_gen_id}} {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    outline: 2px solid transparent;
+    outline-offset: 3px;
+    transition: outline-color 0.15s, transform 0.15s;
+    flex-shrink: 0;
+  }
+  .ai-boomba-color-swatch-{{ai_gen_id}}.is-light { border-color: #D1D5DB; }
+  .ai-boomba-color-swatch-{{ai_gen_id}}.selected { outline-color: #111111; transform: scale(1.12); }
+  .ai-boomba-color-swatch-{{ai_gen_id}}.selected.is-light { outline-color: #6B7280; }
+  .ai-boomba-stock-{{ai_gen_id}} {
+    display: none; align-items: center; gap: 7px;
+    margin-bottom: 16px;
+    animation: boomba-stock-in 0.4s ease;
+  }
+  .ai-boomba-stock-{{ai_gen_id}}.visible { display: flex; }
+  @keyframes boomba-stock-in { from { opacity: 0; } to { opacity: 1; } }
+  .ai-boomba-stock-dot-{{ai_gen_id}} {
+    width: 7px; height: 7px;
+    border-radius: 50%; background: #E05252;
+    flex-shrink: 0;
+    animation: boomba-dot-pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes boomba-dot-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.45; transform: scale(0.8); }
+  }
+  .ai-boomba-stock-text-{{ai_gen_id}} { font-size: 13px; font-weight: 500; color: #E05252; line-height: 1; }
+  .ai-boomba-stock-text-{{ai_gen_id}} span { font-weight: 700; }
+  .ai-boomba-compatibility-{{ai_gen_id}} { font-size: 13px; color: #888; margin-bottom: 16px; }
+  .ai-boomba-reassurance-{{ai_gen_id}} {
+    display: flex; flex-direction: column; gap: 10px;
+    margin-bottom: 18px; padding: 16px;
+    background: #FFF9FB; border-radius: 12px;
+    border: 1px solid #F0D9E2;
+  }
+  .ai-boomba-reassurance-item-{{ai_gen_id}} {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; color: #333; font-weight: 500; line-height: 1.4;
+  }
+  .ai-boomba-reassurance-item-{{ai_gen_id}} svg { width: 20px; height: 20px; flex-shrink: 0; color: #E6A8B3; }
+
+  /* ── ATC ── */
+  .ai-boomba-product-{{ai_gen_id}} .ai-boomba-atc-wrap-{{ai_gen_id}} { margin-bottom: 12px; }
+  .ai-boomba-product-{{ai_gen_id}} .ai-boomba-atc-wrap-{{ai_gen_id}} button[type="submit"],
+  .ai-boomba-product-{{ai_gen_id}} .ai-boomba-atc-wrap-{{ai_gen_id}} .product-form__submit,
+  .ai-boomba-product-{{ai_gen_id}} .ai-boomba-atc-wrap-{{ai_gen_id}} [name="add"] {
+    width: 100% !important;
+    height: 56px !important;
+    border-radius: 40px !important;
+    background-color: rgb(91, 200, 164) !important;
+    color: #FFFFFF !important;
+    font-weight: 600 !important;
+    font-size: 16px !important;
+    letter-spacing: 0.5px !important;
+    text-transform: uppercase !important;
+    border: none !important;
+    cursor: pointer !important;
+    transition: background-color 0.2s !important;
+    box-shadow: 0 2px 16px rgba(91,200,164,0.35) !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  .ai-boomba-product-{{ai_gen_id}} .ai-boomba-atc-wrap-{{ai_gen_id}} button[type="submit"]:hover,
+  .ai-boomba-product-{{ai_gen_id}} .ai-boomba-atc-wrap-{{ai_gen_id}} .product-form__submit:hover,
+  .ai-boomba-product-{{ai_gen_id}} .ai-boomba-atc-wrap-{{ai_gen_id}} [name="add"]:hover {
+    background-color: rgb(71, 180, 144) !important;
+  }
+
+  .ai-boomba-timer-{{ai_gen_id}} {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; background: #111111; color: #FFFFFF;
+    border-radius: 14px; padding: 14px 20px; margin-bottom: 20px;
+  }
+  .ai-boomba-timer-left-group-{{ai_gen_id}} { display: flex; align-items: center; gap: 10px; }
+  .ai-boomba-timer-dot-{{ai_gen_id}} {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #F6B5C8; flex-shrink: 0;
+    animation: boomba-dot-blink 1.4s ease-in-out infinite;
+  }
+  @keyframes boomba-dot-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .ai-boomba-timer-left-{{ai_gen_id}} { display: flex; flex-direction: column; gap: 2px; }
+  .ai-boomba-timer-title-{{ai_gen_id}} { font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 0.8px; }
+  .ai-boomba-timer-sub-{{ai_gen_id}} { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.85); }
+  .ai-boomba-timer-right-{{ai_gen_id}} { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .ai-boomba-timer-ends-{{ai_gen_id}} { font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.6px; }
+  .ai-boomba-timer-countdown-{{ai_gen_id}} {
+    font-size: 22px; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px; color: #F6B5C8;
+    font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+    line-height: 1;
+  }
+  .ai-boomba-timer-countdown-{{ai_gen_id}}.urgent { color: #FF6B6B; animation: boomba-timer-urgent 0.7s ease-in-out infinite; }
+  @keyframes boomba-timer-urgent { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .ai-boomba-timer-{{ai_gen_id}}.expired { background: #444; }
+
+  .ai-boomba-accordion-{{ai_gen_id}} {
+    background: #F7E6EA; border: 1px solid #F0C9D2;
+    border-radius: 12px; padding: 20px; margin-bottom: 20px;
+  }
+  .ai-boomba-accordion-header-{{ai_gen_id}} { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+  .ai-boomba-accordion-title-{{ai_gen_id}} { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 16px; color: #111; }
+  .ai-boomba-bell-icon-{{ai_gen_id}} { width: 20px; height: 20px; flex-shrink: 0; }
+  .ai-boomba-chevron-{{ai_gen_id}} { width: 20px; height: 20px; transition: transform 0.3s ease; flex-shrink: 0; }
+  .ai-boomba-chevron-{{ai_gen_id}}.open { transform: rotate(180deg); }
+  .ai-boomba-accordion-content-{{ai_gen_id}} { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .ai-boomba-accordion-content-{{ai_gen_id}}.open { max-height: 1000px; margin-top: 16px; }
+  .ai-boomba-accordion-text-{{ai_gen_id}} { font-size: 14px; color: #555; margin-bottom: 16px; line-height: 1.6; }
+  .ai-boomba-calculator-{{ai_gen_id}} { display: flex; flex-direction: column; gap: 14px; }
+  .ai-boomba-input-group-{{ai_gen_id}} { display: flex; flex-direction: column; gap: 6px; }
+  .ai-boomba-input-label-{{ai_gen_id}} { font-size: 13px; font-weight: 600; color: #111; }
+  .ai-boomba-select-{{ai_gen_id}} { height: 44px; border-radius: 10px; border: 1px solid #DDD; padding: 0 12px; font-size: 14px; background: #FFF; appearance: auto; cursor: pointer; }
+  .ai-boomba-breast-buttons-{{ai_gen_id}} { display: flex; gap: 8px; flex-wrap: wrap; }
+  .ai-boomba-breast-btn-{{ai_gen_id}} {
+    flex: 1; min-width: 80px; height: 56px;
+    border-radius: 10px; border: 1px solid #DDD;
+    background: #FFF; color: #111; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px; padding: 6px 4px;
+  }
+  .ai-boomba-breast-btn-{{ai_gen_id}} .breast-icon { font-size: 18px; line-height: 1; }
+  .ai-boomba-breast-btn-{{ai_gen_id}} .breast-label { font-size: 11px; color: #666; }
+  .ai-boomba-breast-btn-{{ai_gen_id}}.selected { background: #F4ECEF; border-color: #E6A8B3; color: #111; }
+  .ai-boomba-breast-btn-{{ai_gen_id}}.selected .breast-label { color: #C47A8A; }
+  .ai-boomba-result-box-{{ai_gen_id}} {
+    display: none; margin-top: 4px;
+    background: #FFF; border: 1.5px solid #E6A8B3;
+    border-radius: 12px; padding: 16px 20px;
+    text-align: center; animation: boomba-fade-in 0.3s ease;
+  }
+  @keyframes boomba-fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  .ai-boomba-result-box-{{ai_gen_id}}.visible { display: block; }
+  .ai-boomba-result-label-{{ai_gen_id}} { font-size: 11px; color: #999; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
+  .ai-boomba-result-size-{{ai_gen_id}} { font-family: 'Playfair Display', Georgia, serif; font-size: 48px; font-weight: 700; color: #111; line-height: 1; margin-bottom: 6px; }
+  .ai-boomba-result-desc-{{ai_gen_id}} { font-size: 13px; color: #888; line-height: 1.4; }
+  .ai-boomba-result-counter-{{ai_gen_id}} { margin-top: 8px; font-size: 10px; color: #CCC; letter-spacing: 0.3px; }
+  .ai-boomba-help-text-{{ai_gen_id}} { font-size: 13px; color: #555; margin-top: 16px; line-height: 1.6; }
+  .ai-boomba-help-text-{{ai_gen_id}} a { text-decoration: underline; color: #555; }
+  .ai-boomba-description-{{ai_gen_id}} { font-size: 14px; line-height: 1.6; color: #333; margin-top: 8px; }
+  .ai-boomba-payment-strip-{{ai_gen_id}} { margin-bottom: 16px; }
+  .ai-boomba-payment-strip-{{ai_gen_id}} img { width: 100%; height: auto; display: block; border-radius: 12px; object-fit: contain; }
+
+  /* ═══ BUNDLE ═══ */
+  .ai-boomba-bundle-wrap-{{ai_gen_id}} { margin-bottom: 14px; }
+  .ai-boomba-bundle-label-{{ai_gen_id}} {
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 1.4px; text-transform: uppercase;
+    color: #999; margin-bottom: 10px;
+  }
+  .ai-boomba-bcard-{{ai_gen_id}} {
+    position: relative;
+    border: 2px solid #E5E7EB;
+    border-radius: 18px;
+    background: #FFFFFF;
+    cursor: pointer;
+    transition: border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease, transform 0.18s ease;
+    overflow: hidden;
+    margin-bottom: 12px;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .ai-boomba-bcard-{{ai_gen_id}}:last-child { margin-bottom: 0; }
+  .ai-boomba-bcard-{{ai_gen_id}}:not(.selected):hover {
+    border-color: #E7D7DD;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+    background: #FFFDFE;
+    transform: translateY(-1px);
+  }
+  .ai-boomba-product-{{ai_gen_id}}[data-bundle-theme="premium"] .ai-boomba-bcard-{{ai_gen_id}}.selected {
+    border-color: #7ED6A7;
+    background: rgb(252, 229, 236);
+    box-shadow: 0 0 0 3px rgba(126,214,167,0.16), 0 8px 20px rgba(0,0,0,0.05);
+  }
+  .ai-boomba-product-{{ai_gen_id}}[data-bundle-theme="premium"] .ai-boomba-bcard-{{ai_gen_id}}.selected .ai-boomba-bradio-{{ai_gen_id}} {
+    border-color: #D9869F;
+    background: #FFFFFF;
+  }
+  .ai-boomba-product-{{ai_gen_id}}[data-bundle-theme="premium"] .ai-boomba-bcard-{{ai_gen_id}}.selected .ai-boomba-bradio-dot-{{ai_gen_id}} {
+    background: #D9869F;
+    transform: scale(1);
+  }
+  .ai-boomba-product-{{ai_gen_id}}[data-bundle-theme="premium"] .ai-boomba-bbest-{{ai_gen_id}} {
+    background: linear-gradient(135deg, #D9869F 0%, #E7A8BA 100%);
+    color: #FFFFFF;
+  }
+  .ai-boomba-product-{{ai_gen_id}}[data-bundle-theme="premium"] .ai-boomba-bbonus-{{ai_gen_id}} {
+    background: linear-gradient(135deg, #D9869F 0%, #C8768F 100%);
+  }
+  .ai-boomba-product-{{ai_gen_id}}[data-bundle-theme="premium"] .ai-boomba-bsave-{{ai_gen_id}} {
+    background: #DC2626;
+  }
+  .ai-boomba-bcard-inner-{{ai_gen_id}} {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px; min-height: 0;
+  }
+  .ai-boomba-bradio-{{ai_gen_id}} {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 2px solid #D1D5DB;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .ai-boomba-bradio-dot-{{ai_gen_id}} {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #D9869F;
+    transform: scale(0);
+    transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .ai-boomba-bimgs-{{ai_gen_id}} {
+    display: flex; align-items: center;
+    flex-shrink: 0; gap: 0;
+  }
+  .ai-boomba-bimg-{{ai_gen_id}} {
+    width: 48px; height: 48px;
+    aspect-ratio: 1 / 1;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 2px solid #F3F4F6;
+    background: #F9FAFB;
+  }
+  .ai-boomba-bimg-plus-{{ai_gen_id}} {
+    font-size: 14px; font-weight: 700;
+    color: #9CA3AF; margin: 0 3px;
+    flex-shrink: 0; line-height: 1;
+  }
+  .ai-boomba-bimg-placeholder-{{ai_gen_id}} {
+    width: 48px; height: 48px;
+    border-radius: 10px;
+    border: 2px solid #F3F4F6;
+    background: linear-gradient(135deg, #FDF4F7 0%, #E7A8BA 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .ai-boomba-btext-{{ai_gen_id}} {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .ai-boomba-btitle-{{ai_gen_id}} {
+    font-size: 14px; font-weight: 700; color: #111;
+    line-height: 1.25; white-space: normal; word-break: break-word;
+  }
+  .ai-boomba-bperks-{{ai_gen_id}} {
+    font-size: 11px; color: #6B7280;
+    white-space: normal; word-break: break-word;
+    line-height: 1.4; overflow: visible;
+  }
+  .ai-boomba-delivery-date-{{ai_gen_id}} {
+    font-size: 11px; color: #6B7280;
+    line-height: 1.4; white-space: normal; word-break: break-word;
+  }
+  .ai-boomba-delivery-date-{{ai_gen_id}} .delivery-label { color: #9CA3AF; font-weight: 500; }
+  .ai-boomba-delivery-date-{{ai_gen_id}} .delivery-range { color: rgb(91, 201, 164); font-weight: 600; }
+  .ai-boomba-delivery-date-{{ai_gen_id}} .delivery-cost { color: #6B7280; font-weight: 500; }
+  .ai-boomba-delivery-date-{{ai_gen_id}} .delivery-free { color: rgb(91, 201, 164); font-weight: 600; }
+  .ai-boomba-bsave-{{ai_gen_id}} {
+    display: inline-flex; align-items: center;
+    padding: 2px 7px; border-radius: 5px;
+    font-size: 10px; font-weight: 700;
+    color: #FFFFFF; background: #DC2626;
+    margin-top: 2px; align-self: flex-start;
+  }
+  .ai-boomba-bprice-{{ai_gen_id}} {
+    flex-shrink: 0; text-align: right; min-width: 56px;
+  }
+  .ai-boomba-bprice-b1-{{ai_gen_id}} .ai-boomba-bprice-current-{{ai_gen_id}} { color: #111111; }
+  .ai-boomba-bprice-b2-{{ai_gen_id}} .ai-boomba-bprice-current-{{ai_gen_id}} { color: #DC2626; }
+  .ai-boomba-bprice-current-{{ai_gen_id}} {
+    font-size: 16px; font-weight: 800; line-height: 1; display: block;
+  }
+  .ai-boomba-bprice-compare-{{ai_gen_id}} {
+    font-size: 12px; font-weight: 400;
+    color: #9CA3AF; text-decoration: line-through;
+    display: block; margin-top: 2px;
+  }
+  .ai-boomba-bbest-{{ai_gen_id}} {
+    position: absolute; top: 0; right: 12px;
+    background: linear-gradient(135deg, #D9869F 0%, #E7A8BA 100%);
+    color: #FFFFFF;
+    font-size: 9px; font-weight: 800;
+    letter-spacing: 0.8px; text-transform: uppercase;
+    padding: 4px 9px;
+    border-radius: 0 0 8px 8px;
+  }
+  .ai-boomba-bbonus-{{ai_gen_id}} {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, #D9869F 0%, #C8768F 100%);
+  }
+  .ai-boomba-bbonus-img-{{ai_gen_id}} {
+    width: 32px; height: 32px;
+    border-radius: 6px; object-fit: cover; flex-shrink: 0;
+  }
+  .ai-boomba-bbonus-placeholder-{{ai_gen_id}} {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+  }
+  .ai-boomba-bbonus-text-{{ai_gen_id}} {
+    font-size: 12px; font-weight: 700; color: #FFFFFF; line-height: 1.3;
+  }
+
+  /* ═══ FEATURE BADGES ═══ */
+  .ai-boomba-features-{{ai_gen_id}} {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-left: 4px; margin-right: 4px;
+    margin-bottom: 18px;
+    align-items: stretch;
+  }
+  .ai-boomba-feat-card-{{ai_gen_id}} {
+    background: #F9EDF1;
+    border-radius: 14px;
+    padding: 10px 6px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: space-between;
+    gap: 6px; text-align: center;
+    height: 100%; box-sizing: border-box;
+  }
+  .ai-boomba-feat-img-wrap-{{ai_gen_id}} {
+    width: 64px; height: 64px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .ai-boomba-feat-img-{{ai_gen_id}} {
+    width: 64px; height: 64px;
+    object-fit: contain; display: block; flex-shrink: 0;
+    aspect-ratio: 1 / 1;
+  }
+  .ai-boomba-feat-label-{{ai_gen_id}} {
+    font-size: 9.5px; font-weight: 700; color: #1A1A1A;
+    line-height: 1.25; text-transform: uppercase; letter-spacing: 0.2px;
+    min-height: 2.5em;
+    display: flex; align-items: flex-end; justify-content: center;
+    width: 100%;
+  }
+
+  /* ═══ STICKY BAR ═══ */
+  #ai-boomba-sticky-bar-{{ai_gen_id}} {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 9998 !important;
+    background: #FFFFFF;
+    padding: 10px 16px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+    box-shadow: 0 -3px 20px rgba(0,0,0,0.13);
+    border-top: 1px solid #EEE;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+    will-change: transform;
+  }
+  #ai-boomba-sticky-bar-{{ai_gen_id}}.boomba-sticky-visible { transform: translateY(0); }
+  #ai-boomba-sticky-bar-{{ai_gen_id}} .boomba-simg {
+    width: 44px; height: 44px;
+    border-radius: 8px; object-fit: cover; flex-shrink: 0;
+    border: 1px solid #F0D9E2; background: #F4ECEF;
+  }
+  #ai-boomba-sticky-bar-{{ai_gen_id}} .boomba-sinfo {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; gap: 1px;
+  }
+  #ai-boomba-sticky-bar-{{ai_gen_id}} .boomba-stitle {
+    font-size: 12px; font-weight: 600; color: #111;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+  }
+  #ai-boomba-sticky-bar-{{ai_gen_id}} .boomba-sprice {
+    font-size: 13px; font-weight: 700; color: rgb(227, 31, 31);
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+  }
+  #ai-boomba-sticky-bar-{{ai_gen_id}} .boomba-sbtn {
+    flex-shrink: 0; height: 44px; padding: 0 20px;
+    border-radius: 40px; background: rgb(91, 200, 164);
+    color: #FFFFFF; font-size: 13px; font-weight: 700;
+    letter-spacing: 0.4px; text-transform: uppercase;
+    border: none; cursor: pointer; transition: background 0.2s;
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+    white-space: nowrap; -webkit-tap-highlight-color: transparent;
+  }
+  #ai-boomba-sticky-bar-{{ai_gen_id}} .boomba-sbtn:hover { background: rgb(71, 180, 144); }
+  #ai-boomba-sticky-bar-{{ai_gen_id}} .boomba-sbtn:disabled { background: #CCC; cursor: not-allowed; }
+{% endstyle %}
+
+<boomba-product-{{ai_gen_id}} class="ai-boomba-product-{{ai_gen_id}}" data-bundle-theme="premium" {{ block.shopify_attributes }}>
+
+  <div class="ai-boomba-image-card-{{ai_gen_id}}" id="ai-boomba-media-card-{{ai_gen_id}}">
+    {%- assign first_media = product.media[0] -%}
+    {%- if first_media.media_type == 'video' or first_media.media_type == 'external_video' -%}
+      <video class="ai-boomba-main-video-{{ai_gen_id}}" id="ai-boomba-main-image-{{ai_gen_id}}"
+        src="{{ first_media.sources[1].url | default: first_media.sources[0].url }}"
+        poster="{{ first_media.preview_image | image_url: width: 600 }}"
+        autoplay muted loop playsinline>
+      </video>
+    {%- else -%}
+      {%- assign main_img = product.selected_or_first_available_variant.featured_image | default: product.featured_image -%}
+      {% if main_img %}
+        <img
+          src="{{ main_img | image_url: width: 600 }}"
+          srcset="{{ main_img | image_url: width: 400 }} 400w, {{ main_img | image_url: width: 600 }} 600w, {{ main_img | image_url: width: 800 }} 800w"
+          sizes="(max-width: 600px) 100vw, 600px"
+          alt="{{ main_img.alt | escape }}"
+          class="ai-boomba-main-image-{{ai_gen_id}}"
+          id="ai-boomba-main-image-{{ai_gen_id}}"
+          width="{{ main_img.width }}"
+          height="{{ main_img.height }}"
+          loading="eager"
+          fetchpriority="high"
+          decoding="async">
+      {% else %}
+        <div class="ai-boomba-main-image-{{ai_gen_id}}">{{ 'product-1' | placeholder_svg_tag }}</div>
+      {% endif %}
+    {%- endif -%}
+  </div>
+
+  {% if product.media.size > 1 %}
+    <div class="ai-boomba-thumbnails-wrapper-{{ai_gen_id}}">
+      <div class="ai-boomba-thumbnails-{{ai_gen_id}}" id="ai-boomba-thumbs-{{ai_gen_id}}">
+        {% for media in product.media limit: 20 %}
+          <div class="ai-boomba-thumb-wrap-{{ai_gen_id}}"
+            data-media-type="{{ media.media_type }}"
+            {% if media.media_type == 'video' or media.media_type == 'external_video' %}
+              data-video-src="{{ media.sources[1].url | default: media.sources[0].url }}"
+              data-video-poster="{{ media.preview_image | image_url: width: 600 }}"
+            {% elsif media.media_type == 'image' %}
+              data-image-url="{{ media | image_url: width: 800 }}"
+            {% endif %}>
+            <img
+              src="{{ media.preview_image | image_url: width: 100 }}"
+              srcset="{{ media.preview_image | image_url: width: 100 }} 100w, {{ media.preview_image | image_url: width: 150 }} 150w"
+              sizes="64px"
+              alt="{{ media.alt | escape }}"
+              class="ai-boomba-thumbnail-{{ai_gen_id}}{% if forloop.first %} active{% endif %}"
+              width="64" height="64"
+              loading="lazy"
+              decoding="async">
+            {% if media.media_type == 'video' or media.media_type == 'external_video' %}
+              <div class="ai-boomba-thumb-play-{{ai_gen_id}}">
+                <svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="12" fill="rgba(0,0,0,0.45)"/>
+                  <polygon points="9,7 19,12 9,17" fill="white"/>
+                </svg>
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+      {% if product.media.size > 7 %}
+        <div class="ai-boomba-thumbnails-fade-{{ai_gen_id}}"></div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <script>
+  (function() {
+    var GEN = '{{ai_gen_id}}';
+    function initCarousel() {
+      var card = document.getElementById('ai-boomba-media-card-' + GEN);
+      var wrapper = document.getElementById('ai-boomba-thumbs-' + GEN);
+      if (!card || !wrapper) return;
+      wrapper.addEventListener('click', function(e) {
+        var wrap = null;
+        var el = e.target;
+        while (el && el !== wrapper) {
+          if (el.classList && el.classList.contains('ai-boomba-thumb-wrap-' + GEN)) { wrap = el; break; }
+          el = el.parentNode;
+        }
+        if (!wrap) return;
+        e.stopPropagation();
+        var allThumbs = document.querySelectorAll('.ai-boomba-thumbnail-' + GEN);
+        for (var i = 0; i < allThumbs.length; i++) allThumbs[i].classList.remove('active');
+        var thumbImg = wrap.querySelector('.ai-boomba-thumbnail-' + GEN);
+        if (thumbImg) thumbImg.classList.add('active');
+        var type = wrap.getAttribute('data-media-type');
+        if (type === 'video' || type === 'external_video') {
+          var src = wrap.getAttribute('data-video-src');
+          var poster = wrap.getAttribute('data-video-poster');
+          card.innerHTML = '';
+          var vid = document.createElement('video');
+          vid.className = 'ai-boomba-main-video-' + GEN;
+          vid.setAttribute('src', src);
+          vid.setAttribute('poster', poster);
+          vid.autoplay = true; vid.muted = true; vid.loop = true;
+          vid.setAttribute('playsinline', '');
+          card.appendChild(vid);
+          vid.load();
+          try { vid.play(); } catch(err) {}
+        } else {
+          var url = wrap.getAttribute('data-image-url');
+          if (!url) return;
+          if (url.indexOf('//') === 0) url = 'https:' + url;
+          var oldVid = card.querySelector('video');
+          if (oldVid) { oldVid.pause(); if (oldVid.parentNode) oldVid.parentNode.removeChild(oldVid); }
+          var img = card.querySelector('img');
+          if (!img) {
+            img = document.createElement('img');
+            img.className = 'ai-boomba-main-image-' + GEN;
+            img.setAttribute('width', '800');
+            img.setAttribute('height', '800');
+            img.setAttribute('decoding', 'async');
+            card.appendChild(img);
+          }
+          img.removeAttribute('srcset');
+          img.removeAttribute('sizes');
+          img.setAttribute('src', url);
+        }
+      }, true);
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initCarousel);
+    } else {
+      initCarousel();
+    }
+  })();
+  </script>
+
+  <div class="ai-boomba-reviews-{{ai_gen_id}}">
+    <div class="ai-boomba-stars-{{ai_gen_id}}">
+      {% for i in (1..5) %}
+        <svg class="ai-boomba-star-svg-{{ai_gen_id}}" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="10,1 12.9,7 19.5,7.6 14.5,12 16.2,18.5 10,15 3.8,18.5 5.5,12 0.5,7.6 7.1,7" fill="#FFC107"/>
+        </svg>
+      {% endfor %}
+    </div>
+    <span class="ai-boomba-review-count-{{ai_gen_id}}">{{ block.settings.review_count }} Reseñas</span>
+    {% if block.settings.show_trust_badge and block.settings.trust_badge_image != blank %}
+      <div class="ai-boomba-trust-badge-{{ai_gen_id}}">
+        <img src="{{ block.settings.trust_badge_image | image_url: width: 160 }}"
+          alt="{{ block.settings.trust_badge_alt | default: 'Trustpilot' | escape }}"
+          width="80" height="20" loading="lazy" decoding="async">
+      </div>
+    {% endif %}
+  </div>
+
+  <h1 class="ai-boomba-title-{{ai_gen_id}}">{{ product.title }}</h1>
+
+  <div class="ai-boomba-price-{{ai_gen_id}}">
+    {% if product.selected_or_first_available_variant.compare_at_price > product.selected_or_first_available_variant.price %}
+      <span class="ai-boomba-price-compare-{{ai_gen_id}}" id="ai-boomba-price-compare-{{ai_gen_id}}">
+        {{ product.selected_or_first_available_variant.compare_at_price | money }}
+      </span>
+    {% else %}
+      <span class="ai-boomba-price-compare-{{ai_gen_id}}" id="ai-boomba-price-compare-{{ai_gen_id}}" style="display:none"></span>
+    {% endif %}
+    <span class="ai-boomba-price-current-{{ai_gen_id}}" id="ai-boomba-price-current-{{ai_gen_id}}">
+      {{ product.selected_or_first_available_variant.price | money }}
+    </span>
+    {% if block.settings.show_discount_badge and block.settings.discount_text != blank %}
+      <span class="ai-boomba-discount-badge-{{ai_gen_id}}"
+        style="background-color: {{ block.settings.discount_badge_color }};">
+        {{ block.settings.discount_text }}
+      </span>
+    {% endif %}
+  </div>
+
+  {% if block.settings.show_viewers %}
+    <div class="ai-boomba-viewers-{{ai_gen_id}}" id="ai-boomba-viewers-{{ai_gen_id}}"
+      data-max="{{ block.settings.viewers_max }}"
+      data-interval="{{ block.settings.viewers_interval }}">
+      <div class="ai-boomba-viewers-dot-{{ai_gen_id}}"></div>
+      <div class="ai-boomba-viewers-avatars-{{ai_gen_id}}">
+        <div class="ai-boomba-viewers-avatar-{{ai_gen_id}}">A</div>
+        <div class="ai-boomba-viewers-avatar-{{ai_gen_id}}">M</div>
+        <div class="ai-boomba-viewers-avatar-{{ai_gen_id}}">S</div>
+      </div>
+      <div class="ai-boomba-viewers-text-{{ai_gen_id}}" id="ai-boomba-viewers-text-{{ai_gen_id}}">
+        <strong id="ai-boomba-viewers-count-{{ai_gen_id}}">5</strong>
+        {{ block.settings.viewers_text }}
+      </div>
+    </div>
+  {% endif %}
+
+  <script>
+    window.__boombaStock_{{ai_gen_id}} = {
+      {% for variant in product.variants %}
+        {% assign vkey = 'stock_v' | append: forloop.index %}
+        "{{ variant.id }}": {{ block.settings[vkey] | default: 0 }}{% unless forloop.last %},{% endunless %}
+      {% endfor %}
+    };
+  </script>
+
+  {% form 'product', product %}
+    <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}" id="ai-boomba-variant-id-{{ai_gen_id}}">
+
+    {% if block.settings.feat1_show or block.settings.feat2_show or block.settings.feat3_show or block.settings.feat4_show %}
+      <div class="ai-boomba-features-{{ai_gen_id}}">
+        {% if block.settings.feat1_show and block.settings.feat1_image != blank %}
+          <div class="ai-boomba-feat-card-{{ai_gen_id}}">
+            <div class="ai-boomba-feat-img-wrap-{{ai_gen_id}}">
+              <img src="{{ block.settings.feat1_image | image_url: width: 128 }}"
+                srcset="{{ block.settings.feat1_image | image_url: width: 64 }} 64w, {{ block.settings.feat1_image | image_url: width: 128 }} 128w"
+                sizes="64px" alt="{{ block.settings.feat1_label | escape }}"
+                class="ai-boomba-feat-img-{{ai_gen_id}}"
+                width="64" height="64" loading="lazy" decoding="async">
+            </div>
+            {% if block.settings.feat1_label != blank %}
+              <span class="ai-boomba-feat-label-{{ai_gen_id}}">{{ block.settings.feat1_label }}</span>
+            {% endif %}
+          </div>
+        {% endif %}
+        {% if block.settings.feat2_show and block.settings.feat2_image != blank %}
+          <div class="ai-boomba-feat-card-{{ai_gen_id}}">
+            <div class="ai-boomba-feat-img-wrap-{{ai_gen_id}}">
+              <img src="{{ block.settings.feat2_image | image_url: width: 128 }}"
+                srcset="{{ block.settings.feat2_image | image_url: width: 64 }} 64w, {{ block.settings.feat2_image | image_url: width: 128 }} 128w"
+                sizes="64px" alt="{{ block.settings.feat2_label | escape }}"
+                class="ai-boomba-feat-img-{{ai_gen_id}}"
+                width="64" height="64" loading="lazy" decoding="async">
+            </div>
+            {% if block.settings.feat2_label != blank %}
+              <span class="ai-boomba-feat-label-{{ai_gen_id}}">{{ block.settings.feat2_label }}</span>
+            {% endif %}
+          </div>
+        {% endif %}
+        {% if block.settings.feat3_show and block.settings.feat3_image != blank %}
+          <div class="ai-boomba-feat-card-{{ai_gen_id}}">
+            <div class="ai-boomba-feat-img-wrap-{{ai_gen_id}}">
+              <img src="{{ block.settings.feat3_image | image_url: width: 128 }}"
+                srcset="{{ block.settings.feat3_image | image_url: width: 64 }} 64w, {{ block.settings.feat3_image | image_url: width: 128 }} 128w"
+                sizes="64px" alt="{{ block.settings.feat3_label | escape }}"
+                class="ai-boomba-feat-img-{{ai_gen_id}}"
+                width="64" height="64" loading="lazy" decoding="async">
+            </div>
+            {% if block.settings.feat3_label != blank %}
+              <span class="ai-boomba-feat-label-{{ai_gen_id}}">{{ block.settings.feat3_label }}</span>
+            {% endif %}
+          </div>
+        {% endif %}
+        {% if block.settings.feat4_show and block.settings.feat4_image != blank %}
+          <div class="ai-boomba-feat-card-{{ai_gen_id}}">
+            <div class="ai-boomba-feat-img-wrap-{{ai_gen_id}}">
+              <img src="{{ block.settings.feat4_image | image_url: width: 128 }}"
+                srcset="{{ block.settings.feat4_image | image_url: width: 64 }} 64w, {{ block.settings.feat4_image | image_url: width: 128 }} 128w"
+                sizes="64px" alt="{{ block.settings.feat4_label | escape }}"
+                class="ai-boomba-feat-img-{{ai_gen_id}}"
+                width="64" height="64" loading="lazy" decoding="async">
+            </div>
+            {% if block.settings.feat4_label != blank %}
+              <span class="ai-boomba-feat-label-{{ai_gen_id}}">{{ block.settings.feat4_label }}</span>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% for option in product.options_with_values %}
+      {% assign option_name_lower = option.name | downcase %}
+      {% if option_name_lower contains 'color' or option_name_lower contains 'colour' or option_name_lower contains 'couleur' %}
+        <div class="ai-boomba-variant-label-{{ai_gen_id}}"><span>{{ option.name }}</span></div>
+        <div class="ai-boomba-color-swatches-{{ai_gen_id}}">
+          {% for value in option.values %}
+            {% assign color_label = value | downcase | strip | replace: ' ', '-' %}
+            {% assign hex = '' %}
+            {% case color_label %}
+              {% when 'noir', 'black', 'negro' %}{% assign hex = '#111111' %}
+              {% when 'blanc', 'white', 'blanco' %}{% assign hex = '#FFFFFF' %}
+              {% when 'gris', 'grey', 'gray', 'gris-clair' %}{% assign hex = '#9CA3AF' %}
+              {% when 'gris-fonce', 'dark-grey', 'dark-gray' %}{% assign hex = '#4B5563' %}
+              {% when 'rose', 'pink' %}{% assign hex = '#F4A7B9' %}
+              {% when 'rose-pale', 'blush', 'light-pink' %}{% assign hex = '#FADADD' %}
+              {% when 'nude', 'beige', 'skin', 'chair' %}{% assign hex = '#E8C9A0' %}
+              {% when 'nude-fonce', 'dark-nude', 'mocha' %}{% assign hex = '#C4956A' %}
+              {% when 'ivoire', 'ivory', 'marfil', 'creme' %}{% assign hex = '#FFF8F0' %}
+              {% when 'rouge', 'red', 'rojo' %}{% assign hex = '#DC2626' %}
+              {% when 'bordeaux', 'burgundy', 'wine', 'vino' %}{% assign hex = '#7F1D1D' %}
+              {% when 'orange' %}{% assign hex = '#F97316' %}
+              {% when 'jaune', 'yellow', 'amarillo' %}{% assign hex = '#FACC15' %}
+              {% when 'vert', 'green', 'verde' %}{% assign hex = 'rgb(91, 200, 164)' %}
+              {% when 'bleu', 'blue', 'azul' %}{% assign hex = '#2563EB' %}
+              {% when 'bleu-ciel', 'sky', 'light-blue' %}{% assign hex = '#7DD3FC' %}
+              {% when 'marine', 'navy', 'marino' %}{% assign hex = '#1E3A5F' %}
+              {% when 'violet', 'purple', 'morado' %}{% assign hex = '#7C3AED' %}
+              {% when 'lilas', 'lilac', 'lavande', 'lavender' %}{% assign hex = '#C4B5FD' %}
+              {% when 'marron', 'brown', 'cafe', 'camel' %}{% assign hex = '#92400E' %}
+              {% when 'leopard', 'animal-print' %}{% assign hex = '#C8922A' %}
+              {% else %}{% assign hex = value | downcase | strip %}
+            {% endcase %}
+            {% assign is_light = false %}
+            {% if color_label == 'blanc' or color_label == 'white' or color_label == 'blanco'
+              or color_label == 'ivoire' or color_label == 'ivory' or color_label == 'marfil' or color_label == 'creme'
+              or color_label == 'rose-pale' or color_label == 'blush' or color_label == 'light-pink'
+              or color_label == 'nude' or color_label == 'beige' or color_label == 'skin' or color_label == 'chair'
+              or color_label == 'jaune' or color_label == 'yellow' or color_label == 'amarillo' %}
+              {% assign is_light = true %}
+            {% endif %}
+            {% assign option_soldout = true %}
+            {% for variant in product.variants %}
+              {% assign opt_key = 'option' | append: option.position %}
+              {% if variant[opt_key] == value and variant.available %}{% assign option_soldout = false %}{% endif %}
+            {% endfor %}
+            <button type="button"
+              class="ai-boomba-color-swatch-{{ai_gen_id}}{% if option.selected_value == value %} selected{% endif %}{% if is_light %} is-light{% endif %}{% if option_soldout %} soldout{% endif %}"
+              style="background-color: {{ hex }};"
+              data-option-position="{{ option.position }}"
+              data-value="{{ value | escape }}"
+              {% if option_soldout %}disabled{% endif %}
+              title="{{ value }}{% if option_soldout %} — Agotado{% endif %}"
+              aria-label="{{ value }}{% if option_soldout %} — Agotado{% endif %}"></button>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="ai-boomba-variant-label-{{ai_gen_id}}">
+          <span>{{ option.name }}</span>
+          {% if option_name_lower contains 'size' or option_name_lower contains 'talla' %}
+            {% if block.settings.size_guide_link != blank %}
+              <a href="{{ block.settings.size_guide_link }}" class="ai-boomba-size-guide-link-{{ai_gen_id}}">Tabla De Tallas</a>
+            {% endif %}
+          {% endif %}
+        </div>
+        <div class="ai-boomba-size-buttons-{{ai_gen_id}}">
+          {% for value in option.values %}
+            {% assign option_soldout = true %}
+            {% for variant in product.variants %}
+              {% assign opt_key = 'option' | append: option.position %}
+              {% if variant[opt_key] == value and variant.available %}{% assign option_soldout = false %}{% endif %}
+            {% endfor %}
+            <button type="button"
+              class="ai-boomba-size-button-{{ai_gen_id}}{% if option.selected_value == value %} selected{% endif %}{% if option_soldout %} soldout{% endif %}"
+              data-option-position="{{ option.position }}"
+              data-value="{{ value | escape }}"
+              {% if option_soldout %}disabled{% endif %}>{{ value }}</button>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endfor %}
+
+    <div class="ai-boomba-stock-{{ai_gen_id}}" id="ai-boomba-stock-{{ai_gen_id}}">
+      <div class="ai-boomba-stock-dot-{{ai_gen_id}}"></div>
+      <div class="ai-boomba-stock-text-{{ai_gen_id}}">
+        Solo quedan <span id="ai-boomba-stock-count-{{ai_gen_id}}">3</span> unidades en Stock
+      </div>
+    </div>
+
+    {% if block.settings.compatibility_text != blank %}
+      <div class="ai-boomba-compatibility-{{ai_gen_id}}">{{ block.settings.compatibility_text }}</div>
+    {% endif %}
+
+    {% if block.settings.show_size_guide %}
+      <div class="ai-boomba-accordion-{{ai_gen_id}}">
+        <div class="ai-boomba-accordion-header-{{ai_gen_id}}" id="ai-boomba-accordion-toggle-{{ai_gen_id}}">
+          <div class="ai-boomba-accordion-title-{{ai_gen_id}}">
+            <svg class="ai-boomba-bell-icon-{{ai_gen_id}}" fill="none" stroke="#111" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+            <span>{{ block.settings.accordion_title }}</span>
+          </div>
+          <svg class="ai-boomba-chevron-{{ai_gen_id}}" fill="none" stroke="#111" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </div>
+        <div class="ai-boomba-accordion-content-{{ai_gen_id}}" id="ai-boomba-accordion-content-{{ai_gen_id}}">
+          {% if block.settings.accordion_description != blank %}
+            <div class="ai-boomba-accordion-text-{{ai_gen_id}}">{{ block.settings.accordion_description }}</div>
+          {% endif %}
+          <div class="ai-boomba-calculator-{{ai_gen_id}}">
+            <div class="ai-boomba-input-group-{{ai_gen_id}}">
+              <label class="ai-boomba-input-label-{{ai_gen_id}}">Tu peso</label>
+              <select class="ai-boomba-select-{{ai_gen_id}}" id="ai-boomba-peso-{{ai_gen_id}}">
+                <option value="">Seleccionar tu peso</option>
+                <option value="xs">Menos de 55 kg</option>
+                <option value="s">55 – 65 kg</option>
+                <option value="m">66 – 75 kg</option>
+                <option value="l">76 – 90 kg</option>
+                <option value="xl">Más de 90 kg</option>
+              </select>
+            </div>
+            <div class="ai-boomba-input-group-{{ai_gen_id}}">
+              <label class="ai-boomba-input-label-{{ai_gen_id}}">Seleccionar Tamaño de pecho</label>
+              <div class="ai-boomba-breast-buttons-{{ai_gen_id}}">
+                <button type="button" class="ai-boomba-breast-btn-{{ai_gen_id}}" data-breast="small">
+                  <span class="breast-icon">🔵</span><span class="breast-label">Pequeño</span>
+                </button>
+                <button type="button" class="ai-boomba-breast-btn-{{ai_gen_id}}" data-breast="medium">
+                  <span class="breast-icon">🟣</span><span class="breast-label">Mediano</span>
+                </button>
+                <button type="button" class="ai-boomba-breast-btn-{{ai_gen_id}}" data-breast="large">
+                  <span class="breast-icon">🔴</span><span class="breast-label">Grande</span>
+                </button>
+              </div>
+            </div>
+            <div class="ai-boomba-result-box-{{ai_gen_id}}" id="ai-boomba-result-{{ai_gen_id}}"
+              data-counter-enabled="{{ block.settings.show_size_counter }}"
+              data-counter-start="{{ block.settings.size_counter_start | default: 10000 }}">
+              <div class="ai-boomba-result-label-{{ai_gen_id}}">Tu talla BOOMBA</div>
+              <div class="ai-boomba-result-size-{{ai_gen_id}}" id="ai-boomba-result-size-{{ai_gen_id}}">—</div>
+              <div class="ai-boomba-result-desc-{{ai_gen_id}}" id="ai-boomba-result-desc-{{ai_gen_id}}"></div>
+              {% if block.settings.show_size_counter %}
+                <div class="ai-boomba-result-counter-{{ai_gen_id}}" id="ai-boomba-result-counter-{{ai_gen_id}}"></div>
+              {% endif %}
+            </div>
+          </div>
+          {% if block.settings.help_text != blank %}
+            <div class="ai-boomba-help-text-{{ai_gen_id}}">{{ block.settings.help_text }}</div>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+    {% if block.settings.show_bundles %}
+      {% assign bundle2_product = all_products[block.settings.bundle_product_handle] %}
+      {% assign bundle2_variant = bundle2_product.selected_or_first_available_variant %}
+      {% assign bundle2_price = bundle2_variant.price | default: 0 %}
+      {% assign main_price = product.selected_or_first_available_variant.price %}
+      {% assign bundle2_total = main_price | plus: bundle2_price %}
+      <div class="ai-boomba-bundle-wrap-{{ai_gen_id}}" id="ai-boomba-bundle-{{ai_gen_id}}"
+        data-bundle2-id="{{ bundle2_variant.id }}"
+        data-bundle2-price="{{ bundle2_price }}"
+        data-bundle2-total="{{ bundle2_total }}"
+        data-bundle2-compare="{{ block.settings.bundle2_compare_price | times: 100 }}"
+        data-currency="{{ cart.currency.iso_code }}"
+        data-locale="{{ localization.language.iso_code }}"
+        data-bundle1-shipping-free="{{ block.settings.bundle1_free_shipping }}"
+        data-bundle1-shipping-cost="{{ block.settings.bundle1_shipping_cost }}"
+        data-bundle1-perk="{{ block.settings.bundle1_perk }}"
+        data-bundle2-shipping-free="{{ block.settings.bundle2_free_shipping }}"
+        data-bundle2-shipping-cost="{{ block.settings.bundle2_shipping_cost }}"
+        data-bundle2-perk="{{ block.settings.bundle2_perk }}"
+        data-delivery-min="{{ block.settings.delivery_days_min | default: 2 }}"
+        data-delivery-max="{{ block.settings.delivery_days_max | default: 5 }}">
+        <div class="ai-boomba-offer-title-{{ai_gen_id}}">
+          <span class="line"></span>
+          <span class="text">
+            <svg class="crown" viewBox="0 0 24 24" fill="none">
+              <path d="M3 9l3 3 6-6 6 6 3-3v9H3V9z" fill="#D9869F"/>
+            </svg>
+            {{ block.settings.bundle_section_label }}
+          </span>
+          <span class="line"></span>
+        </div>
+        <div class="ai-boomba-bcard-{{ai_gen_id}} selected" data-bundle="1" id="ai-boomba-bcard1-{{ai_gen_id}}">
+          <div class="ai-boomba-bcard-inner-{{ai_gen_id}}">
+            <div class="ai-boomba-bradio-{{ai_gen_id}}"><div class="ai-boomba-bradio-dot-{{ai_gen_id}}"></div></div>
+            <div class="ai-boomba-bimgs-{{ai_gen_id}}">
+              {% if product.featured_image %}
+                <img src="{{ product.featured_image | image_url: width: 100 }}"
+                  srcset="{{ product.featured_image | image_url: width: 100 }} 100w, {{ product.featured_image | image_url: width: 120 }} 120w"
+                  sizes="48px" alt="{{ product.featured_image.alt | escape }}"
+                  class="ai-boomba-bimg-{{ai_gen_id}}" width="48" height="48" loading="lazy" decoding="async">
+              {% else %}
+                <div class="ai-boomba-bimg-placeholder-{{ai_gen_id}}">👙</div>
+              {% endif %}
+            </div>
+            <div class="ai-boomba-btext-{{ai_gen_id}}">
+              <div class="ai-boomba-btitle-{{ai_gen_id}}">{{ block.settings.bundle1_title | default: '1 Pack' }}</div>
+              <div class="ai-boomba-delivery-date-{{ai_gen_id}}" id="ai-boomba-b1delivery-{{ai_gen_id}}"></div>
+              {% if block.settings.bundle1_save_text != blank %}
+                <span class="ai-boomba-bsave-{{ai_gen_id}}">{{ block.settings.bundle1_save_text }}</span>
+              {% endif %}
+            </div>
+            <div class="ai-boomba-bprice-{{ai_gen_id}} ai-boomba-bprice-b1-{{ai_gen_id}}">
+              <span class="ai-boomba-bprice-current-{{ai_gen_id}}" id="ai-boomba-b1price-{{ai_gen_id}}">{{ main_price | money }}</span>
+              {% if product.selected_or_first_available_variant.compare_at_price > main_price %}
+                <span class="ai-boomba-bprice-compare-{{ai_gen_id}}">{{ product.selected_or_first_available_variant.compare_at_price | money }}</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="ai-boomba-bcard-{{ai_gen_id}}" data-bundle="2" id="ai-boomba-bcard2-{{ai_gen_id}}">
+          {% if block.settings.bundle2_badge != blank %}
+            <div class="ai-boomba-bbest-{{ai_gen_id}}">{{ block.settings.bundle2_badge }}</div>
+          {% endif %}
+          <div class="ai-boomba-bcard-inner-{{ai_gen_id}}">
+            <div class="ai-boomba-bradio-{{ai_gen_id}}"><div class="ai-boomba-bradio-dot-{{ai_gen_id}}"></div></div>
+            <div class="ai-boomba-bimgs-{{ai_gen_id}}">
+              {% if product.featured_image %}
+                <img src="{{ product.featured_image | image_url: width: 100 }}"
+                  srcset="{{ product.featured_image | image_url: width: 100 }} 100w, {{ product.featured_image | image_url: width: 120 }} 120w"
+                  sizes="48px" alt="{{ product.featured_image.alt | escape }}"
+                  class="ai-boomba-bimg-{{ai_gen_id}}" width="48" height="48" loading="lazy" decoding="async">
+              {% else %}
+                <div class="ai-boomba-bimg-placeholder-{{ai_gen_id}}">👙</div>
+              {% endif %}
+              <span class="ai-boomba-bimg-plus-{{ai_gen_id}}">+</span>
+              {% if bundle2_product.featured_image %}
+                <img src="{{ bundle2_product.featured_image | image_url: width: 100 }}"
+                  srcset="{{ bundle2_product.featured_image | image_url: width: 100 }} 100w, {{ bundle2_product.featured_image | image_url: width: 120 }} 120w"
+                  sizes="48px" alt="{{ bundle2_product.title | escape }}"
+                  class="ai-boomba-bimg-{{ai_gen_id}}" width="48" height="48" loading="lazy" decoding="async">
+              {% else %}
+                <div class="ai-boomba-bimg-placeholder-{{ai_gen_id}}">🎁</div>
+              {% endif %}
+            </div>
+            <div class="ai-boomba-btext-{{ai_gen_id}}">
+              <div class="ai-boomba-btitle-{{ai_gen_id}}">{{ block.settings.bundle2_title | default: '2 Pack' }}</div>
+              <div class="ai-boomba-delivery-date-{{ai_gen_id}}" id="ai-boomba-b2delivery-{{ai_gen_id}}"></div>
+              {% if block.settings.bundle2_save_text != blank %}
+                <span class="ai-boomba-bsave-{{ai_gen_id}}">{{ block.settings.bundle2_save_text }}</span>
+              {% endif %}
+            </div>
+            <div class="ai-boomba-bprice-{{ai_gen_id}} ai-boomba-bprice-b2-{{ai_gen_id}}">
+              <span class="ai-boomba-bprice-current-{{ai_gen_id}}" id="ai-boomba-b2price-{{ai_gen_id}}">{{ bundle2_total | money }}</span>
+              {% if block.settings.bundle2_compare_price > 0 %}
+                <span class="ai-boomba-bprice-compare-{{ai_gen_id}}" id="ai-boomba-b2compare-{{ai_gen_id}}">{{ block.settings.bundle2_compare_price | times: 100 | money }}</span>
+              {% endif %}
+            </div>
+          </div>
+          {% if block.settings.bundle2_bonus_text != blank %}
+            <div class="ai-boomba-bbonus-{{ai_gen_id}}">
+              {% if block.settings.bundle2_bonus_image != blank %}
+                <img src="{{ block.settings.bundle2_bonus_image | image_url: width: 80 }}"
+                  alt="bonus" class="ai-boomba-bbonus-img-{{ai_gen_id}}"
+                  width="32" height="32" loading="lazy" decoding="async">
+              {% else %}
+                <div class="ai-boomba-bbonus-placeholder-{{ai_gen_id}}">🎁</div>
+              {% endif %}
+              <div class="ai-boomba-bbonus-text-{{ai_gen_id}}">{{ block.settings.bundle2_bonus_text }}</div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="ai-boomba-atc-wrap-{{ai_gen_id}}" id="ai-boomba-atc-anchor-{{ai_gen_id}}">
+      <button type="submit" name="add"
+        class="product-form__submit button button--full-width button--primary"
+        {% if product.selected_or_first_available_variant.available == false %}disabled{% endif %}>
+        <span>
+          {% if product.selected_or_first_available_variant.available %}
+            {{ block.settings.add_to_cart_text }}
+          {% else %}
+            {{ 'products.product.sold_out' | t }}
+          {% endif %}
+        </span>
+      </button>
+    </div>
+  {% endform %}
+
+  {% if block.settings.show_timer %}
+    <div class="ai-boomba-timer-{{ai_gen_id}}" id="ai-boomba-timer-{{ai_gen_id}}"
+      data-minutes="{{ block.settings.timer_minutes }}"
+      data-reset="{{ block.settings.timer_reset }}">
+      <div class="ai-boomba-timer-left-group-{{ai_gen_id}}">
+        <div class="ai-boomba-timer-dot-{{ai_gen_id}}"></div>
+        <div class="ai-boomba-timer-left-{{ai_gen_id}}">
+          <span class="ai-boomba-timer-title-{{ai_gen_id}}">{{ block.settings.timer_label }}</span>
+          <span class="ai-boomba-timer-sub-{{ai_gen_id}}">{{ block.settings.timer_ends_text }}</span>
+        </div>
+      </div>
+      <div class="ai-boomba-timer-right-{{ai_gen_id}}">
+        <span class="ai-boomba-timer-ends-{{ai_gen_id}}">Tiempo restante</span>
+        <span class="ai-boomba-timer-countdown-{{ai_gen_id}}" id="ai-boomba-countdown-{{ai_gen_id}}">--:--</span>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if block.settings.show_payment_strip and block.settings.payment_strip_image != blank %}
+    <div class="ai-boomba-payment-strip-{{ai_gen_id}}">
+      <img src="{{ block.settings.payment_strip_image | image_url: width: 600 }}"
+        srcset="{{ block.settings.payment_strip_image | image_url: width: 400 }} 400w, {{ block.settings.payment_strip_image | image_url: width: 600 }} 600w"
+        sizes="(max-width: 600px) 100vw, 600px"
+        alt="{{ block.settings.payment_strip_alt | default: 'Paiement sécurisé' | escape }}"
+        width="600" height="150" loading="lazy" decoding="async">
+    </div>
+  {% endif %}
+
+  {% if block.settings.show_reassurance %}
+    <div class="ai-boomba-reassurance-{{ai_gen_id}}">
+      {% if block.settings.reassurance_1 != blank %}
+        <div class="ai-boomba-reassurance-item-{{ai_gen_id}}">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          <span>{{ block.settings.reassurance_1 }}</span>
+        </div>
+      {% endif %}
+      {% if block.settings.reassurance_2 != blank %}
+        <div class="ai-boomba-reassurance-item-{{ai_gen_id}}">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8 8-4-4"/></svg>
+          <span>{{ block.settings.reassurance_2 }}</span>
+        </div>
+      {% endif %}
+      {% if block.settings.reassurance_3 != blank %}
+        <div class="ai-boomba-reassurance-item-{{ai_gen_id}}">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          <span>{{ block.settings.reassurance_3 }}</span>
+        </div>
+      {% endif %}
+      {% if block.settings.reassurance_4 != blank %}
+        <div class="ai-boomba-reassurance-item-{{ai_gen_id}}">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+          <span>{{ block.settings.reassurance_4 }}</span>
+        </div>
+      {% endif %}
+      {% if block.settings.reassurance_5 != blank %}
+        <div class="ai-boomba-reassurance-item-{{ai_gen_id}}">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+          <span>{{ block.settings.reassurance_5 }}</span>
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if product.description != blank %}
+    <div class="ai-boomba-description-{{ai_gen_id}}">{{ product.description }}</div>
+  {% endif %}
+
+</boomba-product-{{ai_gen_id}}>
+
+<script>
+(function () {
+
+  var GEN = '{{ai_gen_id}}';
+
+  /* ── STICKY BAR ── */
+  (function() {
+    var anchor = document.getElementById('ai-boomba-atc-anchor-' + GEN);
+    if (!anchor) return;
+    var bar = document.createElement('div');
+    bar.id = 'ai-boomba-sticky-bar-' + GEN;
+    var imgSrc = '{{ product.featured_image | image_url: width: 100 }}';
+    var imgAlt = {{ product.featured_image.alt | default: product.title | json }};
+    var productTitle = {{ product.title | truncate: 30 | json }};
+    var initialPrice = {{ product.selected_or_first_available_variant.price | money | json }};
+    var atcText = {{ block.settings.add_to_cart_text | json }};
+    var isAvailable = {{ product.selected_or_first_available_variant.available | json }};
+    bar.innerHTML = [
+      imgSrc ? '<img class="boomba-simg" src="' + imgSrc + '" alt="' + imgAlt + '" width="44" height="44" loading="lazy">' : '',
+      '<div class="boomba-sinfo">',
+        '<div class="boomba-stitle">' + productTitle + '</div>',
+        '<div class="boomba-sprice" id="boomba-sticky-price-' + GEN + '">' + initialPrice + '</div>',
+      '</div>',
+      '<button class="boomba-sbtn" id="boomba-sticky-btn-' + GEN + '" type="button"' + (!isAvailable ? ' disabled' : '') + '>',
+        atcText,
+      '</button>'
+    ].join('');
+    document.body.appendChild(bar);
+    var ticking = false;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(function() {
+        var rect = anchor.getBoundingClientRect();
+        var isVisible = rect.bottom > 0 && rect.top < window.innerHeight;
+        if (isVisible) bar.classList.remove('boomba-sticky-visible');
+        else bar.classList.add('boomba-sticky-visible');
+        ticking = false;
+      });
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    var sBtn = document.getElementById('boomba-sticky-btn-' + GEN);
+    if (sBtn) {
+      sBtn.addEventListener('click', function() {
+        var rect = anchor.getBoundingClientRect();
+        if (rect.top > window.innerHeight) {
+          anchor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          var submitBtn = anchor.querySelector('[name="add"]');
+          if (submitBtn && !submitBtn.disabled) submitBtn.click();
+        }
+      });
+    }
+  })();
+
+  /* ── DELIVERY DATE ── */
+  (function() {
+    var bundleWrap = document.getElementById('ai-boomba-bundle-' + GEN);
+    if (!bundleWrap) return;
+    var daysMin = parseInt(bundleWrap.dataset.deliveryMin) || 2;
+    var daysMax = parseInt(bundleWrap.dataset.deliveryMax) || 5;
+    function addBusinessDays(date, n) {
+      var d = new Date(date); var added = 0;
+      while (added < n) { d.setDate(d.getDate() + 1); var day = d.getDay(); if (day !== 0 && day !== 6) added++; }
+      return d;
+    }
+    function fmtDate(d) {
+      var locale = navigator.language || 'es-ES';
+      try { return d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' }); }
+      catch(e) { return d.getDate() + '/' + (d.getMonth()+1); }
+    }
+    var now = new Date();
+    var rangeText = fmtDate(addBusinessDays(now, daysMin)) + ' – ' + fmtDate(addBusinessDays(now, daysMax));
+    function buildDeliveryHtml(isFree, cost, perk) {
+      var html = '<span class="delivery-label">Entrega: </span><span class="delivery-range">' + rangeText + '</span>';
+      if (isFree) html += ' · <span class="delivery-free">✓ Gratis</span>';
+      else if (cost) html += ' · <span class="delivery-cost">' + cost + '</span>';
+      if (perk) html += '<br><span class="delivery-label">' + perk + '</span>';
+      return html;
+    }
+    var b1el = document.getElementById('ai-boomba-b1delivery-' + GEN);
+    if (b1el) b1el.innerHTML = buildDeliveryHtml(bundleWrap.dataset.bundle1ShippingFree === 'true', (bundleWrap.dataset.bundle1ShippingCost || '').trim(), (bundleWrap.dataset.bundle1Perk || '').trim());
+    var b2el = document.getElementById('ai-boomba-b2delivery-' + GEN);
+    if (b2el) b2el.innerHTML = buildDeliveryHtml(bundleWrap.dataset.bundle2ShippingFree === 'true', (bundleWrap.dataset.bundle2ShippingCost || '').trim(), (bundleWrap.dataset.bundle2Perk || '').trim());
+  })();
+
+  /* ── META PIXEL ── */
+  (function() {
+    var _variants = {{ product.variants | json }};
+    var _productTitle = {{ product.title | json }};
+    var _currency = {{ cart.currency.iso_code | json }};
+    var _fired = false;
+    function firePixel(variantId, qty) {
+      if (typeof fbq === 'undefined') return;
+      var v = _variants.find(function(x) { return x.id === parseInt(variantId); });
+      if (!v) return;
+      fbq('track', 'AddToCart', { content_ids: [String(v.id)], content_type: 'product_group', content_name: _productTitle, contents: [{ content_id: String(v.id), quantity: qty || 1 }], currency: _currency, value: parseFloat((v.price / 100).toFixed(2)) });
+    }
+    document.addEventListener('cart:add', function(e) { var item = e.detail && e.detail.items && e.detail.items[0]; if (!item) return; _fired = true; firePixel(item.variant_id, item.quantity); });
+    document.addEventListener('submit', function(e) {
+      var form = e.target; if (!form) return;
+      var action = form.getAttribute('action') || '';
+      if (action.indexOf('/cart/add') === -1) return;
+      _fired = false;
+      var variantInput = form.querySelector('[name="id"]');
+      var qtyInput = form.querySelector('[name="quantity"]');
+      if (!variantInput) return;
+      setTimeout(function() { if (!_fired) firePixel(variantInput.value, qtyInput ? parseInt(qtyInput.value) || 1 : 1); _fired = false; }, 800);
+    }, true);
+  })();
+
+  /* ── VIEWERS ── */
+  (function() {
+    var wrap = document.getElementById('ai-boomba-viewers-' + GEN);
+    if (!wrap) return;
+    var maxV = parseInt(wrap.dataset.max) || 20;
+    var intervalSec = parseInt(wrap.dataset.interval) || 5;
+    var countEl = document.getElementById('ai-boomba-viewers-count-' + GEN);
+    var textEl = document.getElementById('ai-boomba-viewers-text-' + GEN);
+    var current = Math.floor(Math.random() * maxV) + 1;
+    function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+    function update() {
+      current = Math.max(1, Math.min(maxV, current + rand(-3, 3)));
+      if (textEl) textEl.classList.add('updating');
+      setTimeout(function() { if (countEl) countEl.textContent = current; if (textEl) textEl.classList.remove('updating'); }, 300);
+    }
+    if (countEl) countEl.textContent = current;
+    setInterval(update, intervalSec * 1000);
+  })();
+
+  /* ── TIMER ── */
+  (function() {
+    var timerEl = document.getElementById('ai-boomba-timer-' + GEN);
+    var countEl = document.getElementById('ai-boomba-countdown-' + GEN);
+    if (!timerEl || !countEl) return;
+    var minutes = parseInt(timerEl.dataset.minutes) || 10;
+    var shouldReset = timerEl.dataset.reset === 'true';
+    var storageKey = 'boomba_timer_end_' + GEN;
+    var totalSeconds = minutes * 60;
+    var endTime;
+    var stored = sessionStorage.getItem(storageKey);
+    if (stored && !shouldReset) {
+      endTime = parseInt(stored);
+      if (endTime < Date.now()) { endTime = Date.now() + totalSeconds * 1000; sessionStorage.setItem(storageKey, endTime); }
+    } else { endTime = Date.now() + totalSeconds * 1000; sessionStorage.setItem(storageKey, endTime); }
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function tick() {
+      var rem = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+      var h = Math.floor(rem / 3600), m = Math.floor((rem % 3600) / 60), s = rem % 60;
+      countEl.textContent = (h > 0 ? pad(h) + ':' : '') + pad(m) + ':' + pad(s);
+      if (rem <= 120) countEl.classList.add('urgent'); else countEl.classList.remove('urgent');
+      if (rem <= 0) {
+        timerEl.classList.add('expired'); clearInterval(interval);
+        if (shouldReset) { endTime = Date.now() + totalSeconds * 1000; sessionStorage.setItem(storageKey, endTime); timerEl.classList.remove('expired'); countEl.classList.remove('urgent'); interval = setInterval(tick, 1000); }
+      }
+    }
+    var interval = setInterval(tick, 1000); tick();
+  })();
+
+  /* ── CUSTOM ELEMENT ── */
+  class BoombaProduct extends HTMLElement {
+    constructor() {
+      super();
+      this.variantData = {{ product.variants | json }};
+      this.currentOptions = {};
+      {% for option in product.options_with_values %}
+        this.currentOptions['option{{ option.position }}'] = {{ option.selected_value | json }};
+      {% endfor %}
+      this.sizeTable = {
+        xs: { small:{size:'A',desc:'Pecho pequeño, peso ligero'}, medium:{size:'A',desc:'Pecho mediano, peso ligero'}, large:{size:'B',desc:'Pecho grande, peso ligero'} },
+        s:  { small:{size:'A',desc:'Pecho pequeño, peso S'},      medium:{size:'B',desc:'Pecho mediano, peso S'},      large:{size:'B',desc:'Pecho grande, peso S'} },
+        m:  { small:{size:'B',desc:'Pecho pequeño, peso M'},      medium:{size:'B',desc:'Pecho mediano, peso M'},      large:{size:'C',desc:'Pecho grande, peso M'} },
+        l:  { small:{size:'B',desc:'Pecho pequeño, peso L'},      medium:{size:'C',desc:'Pecho mediano, peso L'},      large:{size:'C',desc:'Pecho grande, peso L'} },
+        xl: { small:{size:'C',desc:'Pecho pequeño, peso XL'},     medium:{size:'C',desc:'Pecho mediano, peso XL'},     large:{size:'D',desc:'Pecho grande, peso XL'} }
+      };
+      this._peso = null; this._breast = null;
+      this._selectedBundle = 1; this._bundle2VariantId = null;
+      this._sizeCounterDone = false;
+    }
+
+    connectedCallback() {
+  this._setupVariantButtons();
+  this._setupAccordion();
+  this._setupCalculator();
+  this._initStock();
+  this._setupBundles();
+  this._selectedBundle = 1;
+  this._onBundleChange();
+}
+    _setupVariantButtons() {
+      this.querySelectorAll('[data-option-position]').forEach(btn => {
+        if (btn.disabled) return;
+        btn.addEventListener('click', () => {
+          const pos = btn.dataset.optionPosition;
+          this.querySelectorAll('[data-option-position="' + pos + '"]').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          this.currentOptions['option' + pos] = btn.dataset.value;
+          this._updateVariant();
+        });
+      });
+    }
+
+    _updateVariant() {
+      const match = this.variantData.find(v =>
+        (!this.currentOptions.option1 || v.option1 === this.currentOptions.option1) &&
+        (!this.currentOptions.option2 || v.option2 === this.currentOptions.option2) &&
+        (!this.currentOptions.option3 || v.option3 === this.currentOptions.option3)
+      );
+      if (!match) return;
+      const idInput = this.querySelector('#ai-boomba-variant-id-' + GEN);
+      if (idInput) idInput.value = match.id;
+      const fmt = (cents) => {
+        try { return new Intl.NumberFormat('{{ localization.language.iso_code }}', { style: 'currency', currency: '{{ cart.currency.iso_code }}' }).format(cents / 100); }
+        catch(e) { return (cents / 100).toFixed(2); }
+      };
+      const priceEl = this.querySelector('#ai-boomba-price-current-' + GEN);
+      const compareEl = this.querySelector('#ai-boomba-price-compare-' + GEN);
+      if (priceEl) priceEl.textContent = fmt(match.price);
+      if (compareEl) {
+        if (match.compare_at_price && match.compare_at_price > match.price) { compareEl.textContent = fmt(match.compare_at_price); compareEl.style.display = ''; }
+        else { compareEl.textContent = ''; compareEl.style.display = 'none'; }
+      }
+      const stickyPrice = document.getElementById('boomba-sticky-price-' + GEN);
+      if (stickyPrice) stickyPrice.textContent = fmt(match.price);
+      const stickyBtn = document.getElementById('boomba-sticky-btn-' + GEN);
+      if (stickyBtn) stickyBtn.disabled = !match.available;
+      requestAnimationFrame(() => {
+        const card = document.getElementById('ai-boomba-media-card-' + GEN);
+        if (card && match.featured_image && match.featured_image.src) {
+          const vid = card.querySelector('video');
+          if (vid) { vid.pause(); vid.remove(); }
+          let img = card.querySelector('img');
+          if (!img) {
+            img = document.createElement('img');
+            img.className = 'ai-boomba-main-image-' + GEN;
+            img.id = 'ai-boomba-main-image-' + GEN;
+            img.width = 800; img.height = 800; img.decoding = 'async';
+            card.appendChild(img);
+          }
+          img.src = match.featured_image.src;
+        }
+      });
+      const atcBtn = this.querySelector('[name="add"]');
+      if (atcBtn) {
+        const span = atcBtn.querySelector('span');
+        if (match.available) { atcBtn.disabled = false; if (span) span.textContent = {{ block.settings.add_to_cart_text | json }}; }
+        else { atcBtn.disabled = true; if (span) span.textContent = {{ 'products.product.sold_out' | t | json }}; }
+      }
+      const b1price = this.querySelector('#ai-boomba-b1price-' + GEN);
+      if (b1price) b1price.textContent = fmt(match.price);
+      const bundleWrap = this.querySelector('#ai-boomba-bundle-' + GEN);
+      if (bundleWrap) {
+        const b2raw = parseInt(bundleWrap.dataset.bundle2Price) || 0;
+        const b2total = match.price + b2raw;
+        bundleWrap.dataset.bundle2Total = b2total;
+        const b2priceEl = this.querySelector('#ai-boomba-b2price-' + GEN);
+        if (b2priceEl) b2priceEl.textContent = fmt(b2total);
+      }
+      this._updateStock(match.id);
+    }
+
+    _initStock() {
+      const idInput = this.querySelector('#ai-boomba-variant-id-' + GEN);
+      if (idInput) this._updateStock(parseInt(idInput.value));
+    }
+
+    _updateStock(variantId) {
+      const stockData = window.__boombaStock_{{ai_gen_id}} || {};
+      const stockBadge = this.querySelector('#ai-boomba-stock-' + GEN);
+      const stockCount = this.querySelector('#ai-boomba-stock-count-' + GEN);
+      if (!stockBadge) return;
+      const qty = parseInt(stockData[String(variantId)]) || 0;
+      if (qty <= 0) { stockBadge.classList.remove('visible'); return; }
+      if (stockCount) stockCount.textContent = qty;
+      stockBadge.classList.add('visible');
+    }
+
+    _setupAccordion() {
+      const header = this.querySelector('#ai-boomba-accordion-toggle-' + GEN);
+      const content = this.querySelector('#ai-boomba-accordion-content-' + GEN);
+      const chevron = this.querySelector('.ai-boomba-chevron-' + GEN);
+      if (!header || !content) return;
+      content.classList.add('open'); if (chevron) chevron.classList.add('open');
+      header.addEventListener('click', () => { content.classList.toggle('open'); if (chevron) chevron.classList.toggle('open'); });
+    }
+
+    _setupCalculator() {
+      const pesoSelect = this.querySelector('#ai-boomba-peso-' + GEN);
+      if (pesoSelect) { pesoSelect.addEventListener('change', () => { this._peso = pesoSelect.value || null; this._calcResult(); }); }
+      this.querySelectorAll('.ai-boomba-breast-btn-' + GEN).forEach(btn => {
+        btn.addEventListener('click', () => {
+          this.querySelectorAll('.ai-boomba-breast-btn-' + GEN).forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected'); this._breast = btn.dataset.breast; this._calcResult();
+        });
+      });
+    }
+
+    _calcResult() {
+      const resultBox = this.querySelector('#ai-boomba-result-' + GEN);
+      const resultSize = this.querySelector('#ai-boomba-result-size-' + GEN);
+      const resultDesc = this.querySelector('#ai-boomba-result-desc-' + GEN);
+      if (!this._peso || !this._breast) { if (resultBox) resultBox.classList.remove('visible'); return; }
+      const entry = this.sizeTable[this._peso] && this.sizeTable[this._peso][this._breast];
+      if (!entry) return;
+      if (resultSize) resultSize.textContent = entry.size;
+      if (resultDesc) resultDesc.textContent = entry.desc;
+      if (resultBox) resultBox.classList.add('visible');
+      this._incrementSizeCounter(resultBox);
+    }
+
+    _incrementSizeCounter(resultBox) {
+      if (!resultBox) return;
+      const enabled = resultBox.dataset.counterEnabled === 'true';
+      if (!enabled) return;
+      const counterEl = this.querySelector('#ai-boomba-result-counter-' + GEN);
+      if (!counterEl) return;
+      const startCount = parseInt(resultBox.dataset.counterStart) || 10000;
+      const storageKey = 'boomba_size_counter_' + GEN;
+      const resetKey = 'boomba_size_counter_reset_' + GEN;
+      const now = Date.now(); const H24 = 24 * 60 * 60 * 1000;
+      let resetAt = parseInt(localStorage.getItem(resetKey)) || 0;
+      if (!resetAt || now >= resetAt) { resetAt = now + H24; localStorage.setItem(resetKey, String(resetAt)); localStorage.setItem(storageKey, '0'); this._sizeCounterDone = false; }
+      let count = parseInt(localStorage.getItem(storageKey)) || 0;
+      if (!this._sizeCounterDone) { count += 1; localStorage.setItem(storageKey, String(count)); this._sizeCounterDone = true; }
+      counterEl.textContent = (startCount + count).toLocaleString() + ' personas ya encontraron su talla';
+    }
+
+    _setupBundles() {
+      const bundleWrap = this.querySelector('#ai-boomba-bundle-' + GEN);
+      if (!bundleWrap) return;
+      this._bundle2VariantId = bundleWrap.dataset.bundle2Id || null;
+      const cards = this.querySelectorAll('.ai-boomba-bcard-' + GEN);
+      cards.forEach(card => {
+        card.addEventListener('click', () => {
+          const chosen = parseInt(card.dataset.bundle);
+          if (this._selectedBundle === chosen) return;
+          this._selectedBundle = chosen;
+          cards.forEach(c => c.classList.remove('selected')); card.classList.add('selected');
+          this._onBundleChange();
+        });
+      });
+    }
+
+    _onBundleChange() {
+      const atcBtn = this.querySelector('[name="add"]');
+      const atcSpan = atcBtn && atcBtn.querySelector('span');
+      if (this._selectedBundle === 2 && this._bundle2VariantId) {
+        atcBtn.dataset.bundleMode = '2'; atcBtn.dataset.bundle2Id = this._bundle2VariantId;
+        if (atcSpan) atcSpan.textContent = {{ block.settings.bundle2_atc_text | default: 'AÑADIR PACK A LA CESTA' | json }};
+      } else {
+        atcBtn.dataset.bundleMode = '1';
+        if (atcSpan) atcSpan.textContent = {{ block.settings.add_to_cart_text | json }};
+      }
+    }
+  }
+
+  if (!customElements.get('boomba-product-' + GEN)) {
+    customElements.define('boomba-product-' + GEN, BoombaProduct);
+  }
+
+  /* ── BUNDLE CART INTERCEPTOR ── */
+  document.addEventListener('click', async function(e) {
+    const atcBtn = e.target.closest('[name="add"]');
+    if (!atcBtn) return;
+    if (atcBtn.dataset.bundleMode !== '2') return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    const form = atcBtn.closest('form');
+    const mainVariantId = form ? form.querySelector('[name="id"]')?.value : null;
+    const bundle2VariantId = atcBtn.dataset.bundle2Id;
+    if (!mainVariantId || !bundle2VariantId || bundle2VariantId === 'undefined') { if (form) form.submit(); return; }
+    atcBtn.disabled = true;
+    const span = atcBtn.querySelector('span'); const originalText = span ? span.textContent : '';
+    if (span) span.textContent = '…';
+    try {
+      const response = await fetch('/cart/add.js', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ items: [{ id: parseInt(mainVariantId), quantity: 1 }, { id: parseInt(bundle2VariantId), quantity: 1 }] })
+      });
+      if (response.ok) {
+        fetch('/cart.js').then(r => r.json()).then(cart => {
+          document.querySelectorAll('[data-cart-count], .cart-count, #CartCount, .cart__count, .header__cart-count').forEach(el => { el.textContent = cart.item_count; });
+          document.dispatchEvent(new CustomEvent('cart:updated', { detail: cart, bubbles: true }));
+        });
+        document.dispatchEvent(new CustomEvent('cart:refresh', { bubbles: true }));
+        document.dispatchEvent(new CustomEvent('dispatch:cart-drawer:open', { bubbles: true }));
+        const cartDrawer = document.querySelector('cart-drawer');
+        if (cartDrawer && typeof cartDrawer.renderContents === 'function') { cartDrawer.renderContents({ items: [] }); document.dispatchEvent(new CustomEvent('cart-drawer:open', { bubbles: true })); }
+        if (!document.querySelector('cart-drawer, #CartDrawer, [data-drawer="cart"]')) { window.location.href = '/cart'; }
+      } else { const err = await response.json(); console.error('BOOMBA bundle error:', err); if (form) form.submit(); }
+    } catch(err) { console.error('BOOMBA bundle add error:', err); if (form) form.submit(); }
+    finally { atcBtn.disabled = false; if (span) span.textContent = originalText; }
+  }, true);
+
+})();
+</script>
+
+{% schema %}
+{
+  "name": "BOOMBA product info",
+  "settings": [
+    { "type": "header", "content": "Reviews" },
+    { "type": "number", "id": "review_count", "label": "Review count", "default": 983 },
+    { "type": "header", "content": "Trust badge" },
+    { "type": "checkbox", "id": "show_trust_badge", "label": "Afficher le trust badge", "default": true },
+    { "type": "image_picker", "id": "trust_badge_image", "label": "Image trust badge" },
+    { "type": "text", "id": "trust_badge_alt", "label": "Alt text", "default": "Trustpilot" },
+    { "type": "header", "content": "Badge de réduction" },
+    { "type": "checkbox", "id": "show_discount_badge", "label": "Afficher le badge", "default": true },
+    { "type": "text", "id": "discount_text", "label": "Texte du badge", "default": "-50%" },
+    {
+      "type": "select", "id": "discount_badge_color", "label": "Couleur du badge",
+      "options": [
+        { "value": "#DC2626", "label": "Rouge" },
+        { "value": "rgb(91, 200, 164)", "label": "Vert" },
+        { "value": "#F6B5C8", "label": "Rose" },
+        { "value": "#111111", "label": "Noir" }
+      ],
+      "default": "#DC2626"
+    },
+    {
+      "type": "select", "id": "price_color", "label": "Couleur du prix",
+      "options": [
+        { "value": "#111111", "label": "Noir" },
+        { "value": "#DC2626", "label": "Rouge" }
+      ],
+      "default": "#111111"
+    },
+    { "type": "header", "content": "Visiteurs en temps réel" },
+    { "type": "checkbox", "id": "show_viewers", "label": "Afficher le compteur", "default": true },
+    { "type": "number", "id": "viewers_max", "label": "Maximum de visiteurs", "default": 20 },
+    { "type": "number", "id": "viewers_interval", "label": "Intervalle (secondes)", "default": 5 },
+    { "type": "text", "id": "viewers_text", "label": "Texte après le nombre", "default": "personas están viendo esta oferta ahora" },
+    { "type": "header", "content": "Size guide" },
+    { "type": "url", "id": "size_guide_link", "label": "Size guide link" },
+    { "type": "header", "content": "Product details" },
+    { "type": "text", "id": "compatibility_text", "label": "Compatibility text" },
+    { "type": "text", "id": "add_to_cart_text", "label": "Texte bouton ATC", "default": "AÑADIR A LA CESTA" },
+    {
+      "type": "select", "id": "atc_button_color", "label": "Couleur bouton ATC",
+      "options": [
+        { "value": "#F6B5C8", "label": "Rose" },
+        { "value": "#D9869F", "label": "Rose foncé" },
+        { "value": "rgb(91, 200, 164)", "label": "Vert" },
+        { "value": "#111111", "label": "Noir" }
+      ],
+      "default": "rgb(91, 200, 164)"
+    },
+    {
+      "type": "select", "id": "atc_button_color_hover", "label": "Couleur bouton ATC (hover)",
+      "options": [
+        { "value": "#D9869F", "label": "Rose foncé" },
+        { "value": "#C8768F", "label": "Rose très foncé" },
+        { "value": "#15803D", "label": "Vert foncé" },
+        { "value": "#333333", "label": "Noir doux" }
+      ],
+      "default": "#15803D"
+    },
+    { "type": "header", "content": "═══ BUNDLE SELECTOR ═══" },
+    { "type": "checkbox", "id": "show_bundles", "label": "Afficher le bundle", "default": true },
+    { "type": "text", "id": "bundle_section_label", "label": "Titre section bundle", "default": "Choisissez votre offre" },
+    { "type": "header", "content": "Délai de livraison" },
+    { "type": "number", "id": "delivery_days_min", "label": "Jours ouvrés min", "default": 2 },
+    { "type": "number", "id": "delivery_days_max", "label": "Jours ouvrés max", "default": 5 },
+    { "type": "header", "content": "Bundle 1 — Produit seul" },
+    { "type": "text", "id": "bundle1_title", "label": "Titre", "default": "1 Pack" },
+    { "type": "checkbox", "id": "bundle1_free_shipping", "label": "Livraison gratuite", "default": false },
+    { "type": "text", "id": "bundle1_shipping_cost", "label": "Coût livraison", "default": "99 pesos" },
+    { "type": "text", "id": "bundle1_perk", "label": "Argument marketing" },
+    { "type": "text", "id": "bundle1_save_text", "label": "Badge économie" },
+    { "type": "header", "content": "Bundle 2 — Pack groupé" },
+    { "type": "product", "id": "bundle_product_handle", "label": "Produit secondaire" },
+    { "type": "text", "id": "bundle2_title", "label": "Titre", "default": "2 Pack" },
+    { "type": "text", "id": "bundle2_badge", "label": "Badge best offer", "default": "⭐ Best Offer" },
+    { "type": "number", "id": "bundle2_compare_price", "label": "Prix barré (entier, ex: 99)", "default": 99 },
+    { "type": "checkbox", "id": "bundle2_free_shipping", "label": "Livraison gratuite", "default": true },
+    { "type": "text", "id": "bundle2_shipping_cost", "label": "Coût livraison" },
+    { "type": "text", "id": "bundle2_perk", "label": "Argument marketing", "default": "-20% hoy" },
+    { "type": "text", "id": "bundle2_save_text", "label": "Badge économie", "default": "SAVE $46" },
+    { "type": "text", "id": "bundle2_atc_text", "label": "Texte bouton ATC bundle 2", "default": "AÑADIR PACK A LA CESTA" },
+    { "type": "header", "content": "Bundle 2 — Bonus cadeau" },
+    { "type": "text", "id": "bundle2_bonus_text", "label": "Texte bannière cadeau", "default": "+ FREE Body scrub" },
+    { "type": "image_picker", "id": "bundle2_bonus_image", "label": "Image cadeau" },
+    { "type": "header", "content": "Bandeau paiement" },
+    { "type": "checkbox", "id": "show_payment_strip", "label": "Afficher le bandeau", "default": true },
+    { "type": "image_picker", "id": "payment_strip_image", "label": "Image bandeau paiement" },
+    { "type": "text", "id": "payment_strip_alt", "label": "Alt text", "default": "Paiement sécurisé" },
+    { "type": "header", "content": "Réassurance" },
+    { "type": "checkbox", "id": "show_reassurance", "label": "Afficher la réassurance", "default": true },
+    { "type": "text", "id": "reassurance_1", "label": "Line 1", "default": "Garantía de devolución 30 días" },
+    { "type": "text", "id": "reassurance_2", "label": "Line 2", "default": "Envío gratuito a partir de 40€" },
+    { "type": "text", "id": "reassurance_3", "label": "Line 3", "default": "Pago 100% seguro" },
+    { "type": "text", "id": "reassurance_4", "label": "Line 4", "default": "Múltiples métodos de pago" },
+    { "type": "text", "id": "reassurance_5", "label": "Line 5 (optional)" },
+    { "type": "header", "content": "Stock par variante" },
+    { "type": "paragraph", "content": "0 = badge masqué" },
+    { "type": "number", "id": "stock_v1", "label": "Variante 1", "default": 3 },
+    { "type": "number", "id": "stock_v2", "label": "Variante 2", "default": 5 },
+    { "type": "number", "id": "stock_v3", "label": "Variante 3", "default": 2 },
+    { "type": "number", "id": "stock_v4", "label": "Variante 4", "default": 4 },
+    { "type": "number", "id": "stock_v5", "label": "Variante 5", "default": 1 },
+    { "type": "number", "id": "stock_v6", "label": "Variante 6", "default": 0 },
+    { "type": "number", "id": "stock_v7", "label": "Variante 7", "default": 0 },
+    { "type": "number", "id": "stock_v8", "label": "Variante 8", "default": 0 },
+    { "type": "number", "id": "stock_v9", "label": "Variante 9", "default": 0 },
+    { "type": "number", "id": "stock_v10", "label": "Variante 10", "default": 0 },
+    { "type": "header", "content": "Timer" },
+    { "type": "checkbox", "id": "show_timer", "label": "Afficher le timer", "default": true },
+    { "type": "number", "id": "timer_minutes", "label": "Durée (minutes)", "default": 10 },
+    { "type": "text", "id": "timer_label", "label": "Label timer", "default": "Oferta Flash" },
+    { "type": "text", "id": "timer_ends_text", "label": "Sous-titre timer", "default": "Tu descuento expira pronto" },
+    { "type": "checkbox", "id": "timer_reset", "label": "Reset à chaque chargement", "default": false },
+    { "type": "header", "content": "Calculateur de taille" },
+    { "type": "checkbox", "id": "show_size_guide", "label": "Afficher le calculateur", "default": true },
+    { "type": "text", "id": "accordion_title", "label": "Titre accordion", "default": "Conoce tu talla antes de comprar" },
+    { "type": "textarea", "id": "accordion_description", "label": "Description accordion" },
+    { "type": "richtext", "id": "help_text", "label": "Texte d'aide", "default": "<p>¿Aún necesitas ayuda? Envíanos tus medidas y te ayudaremos a encontrar tu talla exacta.</p>" },
+    { "type": "header", "content": "═══ BADGES FEATURES ═══" },
+    { "type": "header", "content": "Badge 1" },
+    { "type": "checkbox", "id": "feat1_show", "label": "Afficher", "default": true },
+    { "type": "image_picker", "id": "feat1_image", "label": "Image badge 1" },
+    { "type": "text", "id": "feat1_label", "label": "Texte badge 1", "default": "AUMENTO INSTANTÁNEO" },
+    { "type": "header", "content": "Badge 2" },
+    { "type": "checkbox", "id": "feat2_show", "label": "Afficher", "default": true },
+    { "type": "image_picker", "id": "feat2_image", "label": "Image badge 2" },
+    { "type": "text", "id": "feat2_label", "label": "Texte badge 2", "default": "EFECTO ELEVADOR" },
+    { "type": "header", "content": "Badge 3" },
+    { "type": "checkbox", "id": "feat3_show", "label": "Afficher", "default": true },
+    { "type": "image_picker", "id": "feat3_image", "label": "Image badge 3" },
+    { "type": "text", "id": "feat3_label", "label": "Texte badge 3", "default": "INVISIBLE & PERFECTO" },
+    { "type": "header", "content": "Badge 4" },
+    { "type": "checkbox", "id": "feat4_show", "label": "Afficher", "default": true },
+    { "type": "image_picker", "id": "feat4_image", "label": "Image badge 4" },
+    { "type": "text", "id": "feat4_label", "label": "Texte badge 4", "default": "REUTILIZABLE & LAVABLE" },
+    { "type": "header", "content": "Compteur guide des tailles" },
+    { "type": "checkbox", "id": "show_size_counter", "label": "Activer le compteur", "default": false },
+    { "type": "number", "id": "size_counter_start", "label": "Nombre de départ", "default": 10000 }
+  ]
+}
+{% endschema %}

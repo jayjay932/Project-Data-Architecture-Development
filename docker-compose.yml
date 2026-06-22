@@ -1,0 +1,198 @@
+services:
+
+  # ═══════════════════════════════════════════════════════════
+  # BASES DE DONNÉES — C1.1 (SQL) et C1.2 (NoSQL)
+  # ═══════════════════════════════════════════════════════════
+
+  postgres:
+    image: postgres:16
+    container_name: postgres-paris
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: paris_admin
+      POSTGRES_PASSWORD: paris2024
+      POSTGRES_DB: urban_data_explorer
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paris_admin -d urban_data_explorer"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    image: mongo:7
+    container_name: mongo-paris
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: paris_admin
+      MONGO_INITDB_ROOT_PASSWORD: paris2024
+      MONGO_INITDB_DATABASE: urban_data_explorer
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin-paris
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@paris.fr
+      PGADMIN_DEFAULT_PASSWORD: paris2024
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+
+  # ═══════════════════════════════════════════════════════════
+  # DATA LAKE SÉCURISÉ — C1.3
+  # MinIO : stockage objet S3 pour sources variées (CSV/XLSX/JSON)
+  # ═══════════════════════════════════════════════════════════
+
+  minio:
+    image: minio/minio
+    container_name: minio-paris
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: paris_admin
+      MINIO_ROOT_PASSWORD: paris2024min
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ═══════════════════════════════════════════════════════════
+  # SYSTÈME DISTRIBUÉ — C2.2 et C1.4 (scalabilité)
+  # Hadoop HDFS (data lake distribué) + Spark (traitement distribué)
+  # ═══════════════════════════════════════════════════════════
+
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    restart: unless-stopped
+    ports:
+      - "9870:9870"
+      - "9010:9000"
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=urban_data_explorer
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    env_file:
+      - ./hadoop.env
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode
+    restart: unless-stopped
+    volumes:
+      - hadoop_datanode:/hadoop/dfs/data
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+      CORE_CONF_fs_defaultFS: hdfs://namenode:9000
+    ports:
+      - "9864:9864"
+    env_file:
+      - ./hadoop.env
+
+  resourcemanager:
+    image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
+    container_name: resourcemanager
+    restart: unless-stopped
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode:9864"
+    ports:
+      - "8088:8088"
+    env_file:
+      - ./hadoop.env
+
+  nodemanager1:
+    image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
+    container_name: nodemanager
+    restart: unless-stopped
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode:9864 resourcemanager:8088"
+    env_file:
+      - ./hadoop.env
+
+  historyserver:
+    image: bde2020/hadoop-historyserver:2.0.0-hadoop3.2.1-java8
+    container_name: historyserver
+    restart: unless-stopped
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode:9864 resourcemanager:8088"
+    volumes:
+      - hadoop_historyserver:/hadoop/yarn/timeline
+    env_file:
+      - ./hadoop.env
+
+  spark-master:
+    image: bde2020/spark-master:3.0.0-hadoop3.2
+    container_name: spark-master
+    restart: unless-stopped
+    depends_on:
+      - namenode
+      - datanode
+    ports:
+      - "8090:8080"
+      - "7077:7077"
+      - "4040:4040"
+    environment:
+      - INIT_DAEMON_STEP=setup_spark
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    volumes:
+      - ./source:/source
+      - ./pipeline:/opt/pipeline
+      - ./logs:/opt/logs
+
+  spark-worker-1:
+    image: bde2020/spark-worker:3.0.0-hadoop3.2
+    container_name: spark-worker-1
+    restart: unless-stopped
+    depends_on:
+      - spark-master
+    ports:
+      - "8081:8081"
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=1g
+    volumes:
+      - ./source:/source
+      - ./logs:/opt/logs
+
+  spark-worker-2:
+    image: bde2020/spark-worker:3.0.0-hadoop3.2
+    container_name: spark-worker-2
+    restart: unless-stopped
+    depends_on:
+      - spark-master
+    ports:
+      - "8082:8081"
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=1g
+    volumes:
+      - ./source:/source
+      - ./logs:/opt/logs
+
+volumes:
+  postgres_data:
+  mongo_data:
+  minio_data:
+  hadoop_namenode:
+  hadoop_datanode:
+  hadoop_historyserver:
