@@ -1,0 +1,31 @@
+### Login - Obtenir un token
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+    "username": "admin",
+    "password": "paris2024"
+}
+
+### Vérifier le token (remplace TOKEN par le token obtenu)
+GET http://localhost:5000/api/auth/verify
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc4MjI4ODczNCwiZXhwIjoxNzgyMzc1MTM0fQ.pmnWKm7KMZRcgYMnKmfhV8LSDVn-OMlMx7JVhSZj0bs
+
+### Infos utilisateur
+GET http://localhost:5000/api/auth/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc4MjI4ODczNCwiZXhwIjoxNzgyMzc1MTM0fQ.pmnWKm7KMZRcgYMnKmfhV8LSDVn-OMlMx7JVhSZj0bs
+
+### Test sans token (doit retourner 401)
+GET http://localhost:5000/api/auth/verify
+
+### Test viewer
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+    "username": "viewer",
+    "password": "viewer2024"
+}
+
+### Health check (pas de token requis)
+GET http://localhost:5000/api/health

@@ -424,7 +424,7 @@ calcul (pas juste un seul process séquentiel).
 
 ### Notre solution
 **Cluster Apache Spark** : 1 master + 2 workers, déployés en conteneurs Docker
-distincts, communiquant sur le réseau Docker interne. 
+distincts, communiquant sur le réseau Docker interne.
 
 ```
 spark-master   (orchestrateur, port UI 8090)
