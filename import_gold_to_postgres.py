@@ -6,9 +6,10 @@ Crée la table arrondissements et importe toutes les données
 du gold final dans PostgreSQL (conteneur Docker).
 """
 
-from sqlalchemy import create_engine, text
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
+from sqlalchemy import create_engine, text
 
 # ── Configuration de connexion ──────────────────────────────
 # Doit correspondre au docker-compose.yml
@@ -21,7 +22,14 @@ PG_DB = "urban_data_explorer"
 PG_URL = f"postgresql://{PG_USER}:{PG_PASSWORD}@{PG_HOST}:{PG_PORT}/{PG_DB}"
 
 # ── Chemin du gold final ─────────────────────────────────────
-GOLD_CSV = Path(r"C:\Users\jason\Downloads\projet_data_architecture\data\gold\dashboard_gold_complet.csv")
+PROJECT_ROOT = Path(__file__).resolve().parent
+GOLD_CANDIDATES = [
+    PROJECT_ROOT / "data" / "gold" / "dashboard_gold_complet.csv",
+    PROJECT_ROOT / "data" / "gold" / "dashboard_arrondissements_paris_final.csv",
+    PROJECT_ROOT / "data" / "gold" / "dashboard_arrondissements_paris7.csv",
+]
+
+GOLD_CSV = next((path for path in GOLD_CANDIDATES if path.exists()), GOLD_CANDIDATES[0])
 
 TABLE_NAME = "arrondissements"
 

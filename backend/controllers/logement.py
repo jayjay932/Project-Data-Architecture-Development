@@ -6,7 +6,7 @@ import logging
 
 
 from models.arrondissement import Arrondissement
-from backend.services.old_data_loader import DataLoader
+from backend.services.data_loader import DataLoader
 from views.response_formatter import format_response, format_error, format_not_found
 
 logger = logging.getLogger(__name__)

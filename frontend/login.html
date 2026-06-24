@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion — Urban Data Explorer</title>
+    <link rel="stylesheet" href="assets/css/auth.css?v=20260624b">
+</head>
+<body class="login-page">
+    <main class="auth-layout">
+        <section class="auth-hero">
+            <div class="hero-copy">
+                <p class="eyebrow">Urban Data Explorer</p>
+                <h1>Connexion au dashboard d'analyse immobilière de Paris</h1>
+                <p class="hero-text">
+                    Accède au tableau de bord, aux comparaisons d'arrondissements et aux endpoints JWT
+                    déjà exposés par le backend.
+                </p>
+            </div>
+
+            <div class="hero-grid">
+                <article class="hero-card hero-card-accent">
+                    <span class="hero-label">JWT activé</span>
+                    <h2>Flux prêt côté backend</h2>
+                    <p>Login, vérification de token, récupération du profil utilisateur et déconnexion frontend.</p>
+                </article>
+
+                <article class="hero-card">
+                    <span class="hero-label">Comptes de démo</span>
+                    <div class="demo-credentials">
+                        <button class="demo-credential" type="button" data-username="admin" data-password="paris2024">
+                            <strong>admin</strong>
+                            <span>Accès administrateur</span>
+                        </button>
+                        <button class="demo-credential" type="button" data-username="viewer" data-password="viewer2024">
+                            <strong>viewer</strong>
+                            <span>Accès lecture seule</span>
+                        </button>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="auth-panel">
+            <div class="auth-card">
+                <div class="auth-card-header">
+                    <div>
+                        <p class="eyebrow">Authentification</p>
+                        <h2>Ouvrir une session</h2>
+                    </div>
+                    <div id="auth-api-status" class="api-pill" data-state="loading">
+                        Vérification du backend...
+                    </div>
+                </div>
+
+                <form id="login-form" class="auth-form">
+                    <label class="field">
+                        <span>Nom d'utilisateur</span>
+                        <input id="username" name="username" type="text" placeholder="admin" autocomplete="username" required>
+                    </label>
+
+                    <label class="field">
+                        <span>Mot de passe</span>
+                        <input id="password" name="password" type="password" placeholder="••••••••" autocomplete="current-password" required>
+                    </label>
+
+                    <button id="login-submit" class="auth-submit" type="submit">
+                        Se connecter au dashboard
+                    </button>
+                </form>
+
+                <p id="login-error" class="form-message error hidden"></p>
+                <p id="login-success" class="form-message success hidden"></p>
+
+                <div class="auth-hint">
+                    <p>Après connexion, tu seras redirigée vers <code>index.html</code>.</p>
+                    <p>Si PostgreSQL n'est pas prêt, le dashboard affichera un état dégradé mais la session JWT restera valide.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="assets/js/utils.js?v=20260624b"></script>
+    <script src="assets/js/auth.js?v=20260624b"></script>
+    <script src="assets/js/api.js?v=20260624b"></script>
+    <script src="assets/js/login.js?v=20260624b"></script>
+</body>
+</html>

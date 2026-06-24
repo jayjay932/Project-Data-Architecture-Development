@@ -289,16 +289,19 @@ class UI {
             const arrMin = allData.find(arr => arr[metric] === min);
             const arrMax = allData.find(arr => arr[metric] === max);
             
+            const arrMinLabel = arrMin ? (arrMin.arrondissement ?? arrMin.Arrondissement) : null;
+            const arrMaxLabel = arrMax ? (arrMax.arrondissement ?? arrMax.Arrondissement) : null;
+
             document.getElementById('stats-content').innerHTML = `
                 <div class="stat-item">
                     <span class="stat-label">Minimum</span>
                     <span class="stat-value">${formatValueForMetric(min, metric)}</span>
-                    ${arrMin ? `<span style="font-size: 0.75rem; opacity: 0.7;">${arrMin.Arrondissement}e arr.</span>` : ''}
+                    ${arrMinLabel ? `<span style="font-size: 0.75rem; opacity: 0.7;">${arrMinLabel}e arr.</span>` : ''}
                 </div>
                 <div class="stat-item">
                     <span class="stat-label">Maximum</span>
                     <span class="stat-value">${formatValueForMetric(max, metric)}</span>
-                    ${arrMax ? `<span style="font-size: 0.75rem; opacity: 0.7;">${arrMax.Arrondissement}e arr.</span>` : ''}
+                    ${arrMaxLabel ? `<span style="font-size: 0.75rem; opacity: 0.7;">${arrMaxLabel}e arr.</span>` : ''}
                 </div>
                 <div class="stat-item">
                     <span class="stat-label">Moyenne</span>

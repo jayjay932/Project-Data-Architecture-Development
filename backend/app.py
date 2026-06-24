@@ -16,7 +16,7 @@ os.chdir(project_root)
 
 # Imports des modules du projet
 from config import get_config
-from services.data_loader import DataLoader, initialize_data_loader
+from backend.services.data_loader import DataLoader, initialize_data_loader
 from controllers.prix import prix_bp
 from controllers.logement import logement_bp
 from controllers.transport import transport_bp
