@@ -1,6 +1,6 @@
 /**
- * Point d'entrée — Dashboard exact UI
- * Version propre et stable.
+ * Point d'entrée — Urban Data Explorer
+ * Avec vérification JWT au démarrage
  */
 
 let api, map, ui, comparateur;
@@ -9,17 +9,34 @@ let currentYear = '2024';
 
 async function initApp() {
     try {
+        // ── Vérification authentification ────────────────────
+        const token = sessionStorage.getItem('ude_token');
+        const user  = JSON.parse(sessionStorage.getItem('ude_user') || 'null');
+
+        if (!token) {
+            log('🔒 Pas de token — redirection login', 'warning');
+            window.location.href = 'login.html';
+            return;
+        }
+
+        // Afficher le nom de l'utilisateur dans le header
+        const userEl = document.getElementById('header-user');
+        if (userEl && user) {
+            userEl.textContent = `👤 ${user.name}`;
+        }
+
         log('🚀 Démarrage Urban Data Explorer...', 'info');
 
         api = new APIClient('http://localhost:5000/api');
 
         showLoading();
 
+        // Vérifier la connexion API (envoie le token automatiquement)
         const connected = await api.checkConnection();
 
         if (!connected) {
             hideLoading();
-            alert('Impossible de se connecter à l’API backend. Vérifie que le serveur tourne sur http://localhost:5000');
+            alert('Impossible de se connecter à l\'API backend.\nVérifie que le serveur tourne sur http://localhost:5000');
             return;
         }
 
@@ -30,21 +47,24 @@ async function initApp() {
 
         map = new ParisMap('map', api);
         await map.init();
-forceUpdateKpiFromMap();
+
+        forceUpdateKpiFromMap();
+
         setupEventListeners();
 
-        await ui.updateKpiCards();
+        await ui.updateKpiCards?.();
         await ui.updateStatsPanel(currentMetric);
 
-       if (map && typeof map.selectArrondissement === 'function') {
-    map.selectArrondissement(12);
-}
+        if (map && typeof map.selectArrondissement === 'function') {
+            map.selectArrondissement(12);
+        }
 
-await ui.showDetailPanel(12);
+        await ui.showDetailPanel(12);
 
         hideLoading();
 
         log('✅ Application prête', 'success');
+
     } catch (error) {
         hideLoading();
         log(`❌ Erreur initialisation: ${error.message}`, 'error');
@@ -53,13 +73,11 @@ await ui.showDetailPanel(12);
 }
 
 function setupEventListeners() {
-    const refreshBtn = document.getElementById('refresh-btn');
+    const refreshBtn  = document.getElementById('refresh-btn');
     const metricSelect = document.getElementById('metric-select');
-    const yearSelect = document.getElementById('year-select');
+    const yearSelect   = document.getElementById('year-select');
 
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', handleRefresh);
-    }
+    if (refreshBtn)   refreshBtn.addEventListener('click', handleRefresh);
 
     if (metricSelect) {
         metricSelect.addEventListener('change', async (e) => {
@@ -76,8 +94,7 @@ function setupEventListeners() {
     }
 
     window.addEventListener('arrondissement-selected', async (e) => {
-        const numero = e.detail.numero;
-        await ui.showDetailPanel(numero);
+        await ui.showDetailPanel(e.detail.numero);
     });
 
     window.addEventListener('resize', debounce(() => {
@@ -103,24 +120,31 @@ async function handleRefresh(withLoader = true) {
     }
 }
 
-window.addEventListener('error', (event) => {
-    log(`❌ Erreur globale: ${event.error || event.message}`, 'error');
+// ── Déconnexion ──────────────────────────────────────────────
+function logout() {
+    sessionStorage.removeItem('ude_token');
+    sessionStorage.removeItem('ude_user');
+    window.location.href = 'login.html';
+}
+
+// ── Erreurs globales ─────────────────────────────────────────
+window.addEventListener('error', (e) => {
+    log(`❌ Erreur globale: ${e.error || e.message}`, 'error');
 });
 
-window.addEventListener('unhandledrejection', (event) => {
-    log(`❌ Promise rejetée: ${event.reason}`, 'error');
+window.addEventListener('unhandledrejection', (e) => {
+    log(`❌ Promise rejetée: ${e.reason}`, 'error');
 });
 
+// ── Démarrage ────────────────────────────────────────────────
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initApp);
 } else {
     initApp();
 }
 
-console.log(
-    '%cUrban Data Explorer — Clean Final',
-    'font-size: 20px; font-weight: bold; color: #5b6df7;'
-);function forceUpdateKpiFromMap() {
+// ── KPI depuis map.data ──────────────────────────────────────
+function forceUpdateKpiFromMap() {
     if (!map || !map.data || !(map.data instanceof Map)) {
         console.warn('❌ map.data indisponible pour les KPI');
         return;
@@ -135,24 +159,14 @@ console.log(
         })
         .filter(Boolean);
 
-    console.log('✅ KPI FORCE rows:', rows);
-
     const setText = (id, value) => {
         const el = document.getElementById(id);
         if (el) el.textContent = value;
     };
 
     const num = (value) => {
-        if (value === null || value === undefined || value === '' || value === 'N/A') return null;
-
-        const n = Number(
-            String(value)
-                .replace(/\s/g, '')
-                .replace(',', '.')
-                .replace('€', '')
-                .replace('%', '')
-        );
-
+        if (value === null || value === undefined || value === '') return null;
+        const n = Number(String(value).replace(/\s/g,'').replace(',','.').replace('€','').replace('%',''));
         return Number.isFinite(n) ? n : null;
     };
 
@@ -165,53 +179,25 @@ console.log(
     };
 
     const formatShort = (value) => {
-        if (value >= 1000000) {
-            return `${(value / 1000000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}M`;
-        }
-
-        if (value >= 1000) {
-            return `${(value / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}k`;
-        }
-
+        if (value >= 1000000) return `${(value/1000000).toLocaleString('fr-FR',{maximumFractionDigits:1})}M`;
+        if (value >= 1000) return `${(value/1000).toLocaleString('fr-FR',{maximumFractionDigits:1})}k`;
         return Math.round(value).toLocaleString('fr-FR');
     };
 
-    const formatPriceM2 = (value) => {
-        return `${Math.round(value).toLocaleString('fr-FR')} €/m²`;
-    };
-
-    const logements = rows.reduce((sum, row) => {
-        return sum + firstNumber(row, [
-            'nb_logements_2022',
-            'logements_2022',
-            'nb_logements',
-            'nb_appartements_2024',
-            'nb_appartement_2024'
-        ]);
-    }, 0);
+    const logements = rows.reduce((sum, row) => sum + firstNumber(row, [
+        'nb_logements_2022','logements_2022','nb_logements','nb_appartements_2024'
+    ]), 0);
 
     const prices = rows
-        .map(row => firstNumber(row, [
-            'prix_m2_median_2024',
-            'prix_m2_moyen_2024',
-            'prix_m2_median',
-            'prix_m2'
-        ]))
-        .filter(value => value > 0);
+        .map(row => firstNumber(row, ['prix_m2_median_2024','prix_m2_moyen_2024','prix_m2_median','prix_m2']))
+        .filter(v => v > 0);
 
     setText('kpi-arrondissements', rows.length || 20);
-
-    if (logements > 0) {
-        setText('kpi-logements', formatShort(logements));
-    }
-
+    if (logements > 0) setText('kpi-logements', formatShort(logements));
     if (prices.length > 0) {
-        const avg = prices.reduce((sum, value) => sum + value, 0) / prices.length;
-        setText('kpi-marche', formatPriceM2(avg));
+        const avg = prices.reduce((s,v) => s+v, 0) / prices.length;
+        setText('kpi-marche', `${Math.round(avg).toLocaleString('fr-FR')} €/m²`);
     }
-
-    console.log('✅ KPI FORCE OK:', {
-        logements,
-        prix_m2_moyen: prices.length ? prices.reduce((s, v) => s + v, 0) / prices.length : null
-    });
 }
+
+console.log('%cUrban Data Explorer', 'font-size:18px;font-weight:bold;color:#c9a84c;');

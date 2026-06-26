@@ -26,16 +26,36 @@
             </div>
 
             <nav class="top-actions" aria-label="Actions principales">
-                <button class="ghost-action" type="button">
-                    <span>📖</span> Méthodologie
-                </button>
-                <button class="ghost-action" type="button">
-                    <span>↓</span> Exporter
-                </button>
-                <button class="share-action" type="button">
-                    <span>↗</span> Partager <span class="chevron">⌄</span>
-                </button>
-            </nav>
+    <button class="ghost-action" type="button">
+        <span>📖</span> Méthodologie
+    </button>
+    <button class="ghost-action" type="button">
+        <span>↓</span> Exporter
+    </button>
+    <div style="display:flex; align-items:center; gap:.65rem; margin-left:.5rem;">
+        <span id="header-user" style="font-size:.78rem; color:rgba(255,255,255,.55); font-weight:500;"></span>
+        <button
+            onclick="logout()"
+            type="button"
+            style="
+                background: rgba(255,255,255,.08);
+                border: 1px solid rgba(255,255,255,.12);
+                color: rgba(255,255,255,.65);
+                padding: .35rem .85rem;
+                border-radius: 6px;
+                font-size: .75rem;
+                cursor: pointer;
+                font-family: inherit;
+                letter-spacing: .03em;
+                transition: all .2s;
+            "
+            onmouseover="this.style.background='rgba(239,68,68,.15)';this.style.borderColor='rgba(239,68,68,.4)';this.style.color='#fca5a5'"
+            onmouseout="this.style.background='rgba(255,255,255,.08)';this.style.borderColor='rgba(255,255,255,.12)';this.style.color='rgba(255,255,255,.65)'"
+        >
+            Déconnexion
+        </button>
+    </div>
+</nav>
         </header>
 
         <section class="kpi-row" aria-label="Indicateurs clés">
@@ -103,28 +123,42 @@
                                     <option value="prix_m2_median_2024">Prix/m² médian</option>
                                     <option value="prix_median_2024">Prix médian</option>
                                     <option value="nb_ventes_2024">Nombre de ventes</option>
+                                    <option value="evolution_prix_2020_2024_pct">Évolution 2020-2024</option>
+                                    <option value="volatilite_prix_m2">Volatilité prix/m²</option>
                                 </optgroup>
-
                                 <optgroup label="🏠 Logements">
                                     <option value="nb_appartements_2024">Nombre d'appartements</option>
+                                    <option value="pct_T1_2024">Part Studios (T1)</option>
+                                    <option value="pct_T2_2024">Part T2</option>
+                                    <option value="pct_T3_2024">Part T3</option>
+                                    <option value="nb_pieces_moyen">Nb pièces moyen</option>
                                 </optgroup>
-
                                 <optgroup label="🏢 Logements sociaux">
                                     <option value="nb_logements_sociaux_apur">Logements sociaux (nb APUR)</option>
                                     <option value="part_logements_sociaux_apur_pct">Logements sociaux (% APUR)</option>
                                 </optgroup>
-
                                 <optgroup label="🚇 Transport">
                                     <option value="nb_stations_metro">Nombre de stations métro</option>
                                     <option value="trafic_total_metro">Trafic métro total</option>
                                     <option value="nb_lignes_metro">Nombre de lignes métro</option>
                                     <option value="nb_lignes_rer">Nombre de lignes RER</option>
                                 </optgroup>
-
+                                <optgroup label="🌫️ Qualité de l'air">
+                                    <option value="no2_moyen">NO₂ moyen (µg/m³)</option>
+                                    <option value="pm10_moyen">PM10 moyen (µg/m³)</option>
+                                    <option value="o3_moyen">O₃ moyen (µg/m³)</option>
+                                </optgroup>
                                 <optgroup label="👥 Démographie & revenus">
                                     <option value="population_2022">Population 2022</option>
                                     <option value="densite_pop_km2">Densité de population</option>
                                     <option value="revenu_median">Revenu médian</option>
+                                </optgroup>
+                                <optgroup label="📊 Indicateurs composites">
+                                    <option value="indice_accessibilite">Indice d'accessibilité</option>
+                                    <option value="indice_tension_sociale">Indice tension sociale</option>
+                                    <option value="indice_attractivite">Indice d'attractivité</option>
+                                    <option value="indice_pression_immo">Indice pression immo</option>
+                                    <option value="ratio_effort_achat">Effort d'achat (années)</option>
                                 </optgroup>
                             </select>
                         </div>
@@ -152,56 +186,35 @@
                                 <label for="select-arr-a">Arrondissement A</label>
                                 <div class="select-shell thin">
                                     <select id="select-arr-a">
-                                        <option value="">Sélectionner un arrondissement</option>
-                                        <option value="1">1er</option>
-                                        <option value="2">2e</option>
-                                        <option value="3">3e</option>
-                                        <option value="4">4e</option>
-                                        <option value="5">5e</option>
-                                        <option value="6">6e</option>
-                                        <option value="7">7e</option>
-                                        <option value="8">8e</option>
-                                        <option value="9">9e</option>
-                                        <option value="10">10e</option>
-                                        <option value="11">11e</option>
-                                        <option value="12">12e</option>
-                                        <option value="13">13e</option>
-                                        <option value="14">14e</option>
-                                        <option value="15">15e</option>
-                                        <option value="16">16e</option>
-                                        <option value="17">17e</option>
-                                        <option value="18">18e</option>
-                                        <option value="19">19e</option>
-                                        <option value="20">20e</option>
+                                        <option value="">Sélectionner...</option>
+                                        <option value="1">1er</option><option value="2">2e</option>
+                                        <option value="3">3e</option><option value="4">4e</option>
+                                        <option value="5">5e</option><option value="6">6e</option>
+                                        <option value="7">7e</option><option value="8">8e</option>
+                                        <option value="9">9e</option><option value="10">10e</option>
+                                        <option value="11">11e</option><option value="12">12e</option>
+                                        <option value="13">13e</option><option value="14">14e</option>
+                                        <option value="15">15e</option><option value="16">16e</option>
+                                        <option value="17">17e</option><option value="18">18e</option>
+                                        <option value="19">19e</option><option value="20">20e</option>
                                     </select>
                                 </div>
                             </div>
-
                             <div class="comparison-select-group">
                                 <label for="select-arr-b">Arrondissement B</label>
                                 <div class="select-shell thin">
                                     <select id="select-arr-b">
-                                        <option value="">Sélectionner un arrondissement</option>
-                                        <option value="1">1er</option>
-                                        <option value="2">2e</option>
-                                        <option value="3">3e</option>
-                                        <option value="4">4e</option>
-                                        <option value="5">5e</option>
-                                        <option value="6">6e</option>
-                                        <option value="7">7e</option>
-                                        <option value="8">8e</option>
-                                        <option value="9">9e</option>
-                                        <option value="10">10e</option>
-                                        <option value="11">11e</option>
-                                        <option value="12">12e</option>
-                                        <option value="13">13e</option>
-                                        <option value="14">14e</option>
-                                        <option value="15">15e</option>
-                                        <option value="16">16e</option>
-                                        <option value="17">17e</option>
-                                        <option value="18">18e</option>
-                                        <option value="19">19e</option>
-                                        <option value="20">20e</option>
+                                        <option value="">Sélectionner...</option>
+                                        <option value="1">1er</option><option value="2">2e</option>
+                                        <option value="3">3e</option><option value="4">4e</option>
+                                        <option value="5">5e</option><option value="6">6e</option>
+                                        <option value="7">7e</option><option value="8">8e</option>
+                                        <option value="9">9e</option><option value="10">10e</option>
+                                        <option value="11">11e</option><option value="12">12e</option>
+                                        <option value="13">13e</option><option value="14">14e</option>
+                                        <option value="15">15e</option><option value="16">16e</option>
+                                        <option value="17">17e</option><option value="18">18e</option>
+                                        <option value="19">19e</option><option value="20">20e</option>
                                     </select>
                                 </div>
                             </div>
@@ -223,16 +236,12 @@
 
             <main class="map-card">
                 <div id="map"></div>
-
                 <button class="map-plan" type="button">▧ <strong>Plan</strong></button>
-
                 <div id="legend" class="legend">
                     <h4 id="legend-title">Prix/m² médian 2024</h4>
                     <div id="legend-scale" class="legend-scale"></div>
                 </div>
-
                 <div id="tooltip" class="tooltip"></div>
-
                 <div id="loading" class="loading hidden">
                     <div class="spinner"></div>
                     <p>Chargement des données...</p>
@@ -259,7 +268,7 @@
     <script src="assets/js/utils.js?v=clean-final-1"></script>
     <script src="assets/js/api.js?v=clean-final-1"></script>
     <script src="assets/js/map.js?v=map-dom-labels-1"></script>
-   <script src="assets/js/ui.js?v=kpi-fix-1"></script>
+    <script src="assets/js/ui.js?v=kpi-fix-1"></script>
     <script src="assets/js/comparaison.js?v=clean-final-1"></script>
     <script src="assets/js/main.js?v=clean-final-1"></script>
 </body>

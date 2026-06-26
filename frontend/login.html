@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Urban Data Explorer — Connexion</title>
+    <style>
+        :root {
+            --marine:      #0f1c2e;
+            --marine-mid:  #1a2f4a;
+            --or:          #c9a84c;
+            --or-light:    #e8c87a;
+            --creme:       #f8f5ef;
+            --blanc:       #ffffff;
+            --gris-mid:    #e0dde8;
+            --gris-text:   #6b6b80;
+            --rouge:       #ef4444;
+            --vert:        #1db954;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--marine);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Fond décoratif */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -200px;
+            right: -200px;
+            width: 600px;
+            height: 600px;
+            border: 1px solid rgba(201,168,76,.08);
+            border-radius: 50%;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            bottom: -150px;
+            left: -150px;
+            width: 400px;
+            height: 400px;
+            border: 1px solid rgba(201,168,76,.06);
+            border-radius: 50%;
+        }
+
+        /* Carte de login */
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+            background: rgba(255,255,255,.04);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(201,168,76,.2);
+            border-radius: 20px;
+            padding: 2.5rem 2rem;
+            position: relative;
+            z-index: 1;
+            box-shadow: 0 32px 64px rgba(0,0,0,.4);
+        }
+
+        /* Logo & titre */
+        .login-logo {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            background: var(--or);
+            border-radius: 14px;
+            margin-bottom: .85rem;
+        }
+
+        .logo-icon svg { display: block; }
+
+        .login-title {
+            font-family: Georgia, serif;
+            font-size: 1.5rem;
+            font-weight: 400;
+            color: var(--blanc);
+            letter-spacing: .02em;
+        }
+
+        .login-subtitle {
+            font-size: .8rem;
+            color: rgba(255,255,255,.4);
+            margin-top: .25rem;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+        }
+
+        /* Formulaire */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: .72rem;
+            font-weight: 700;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,.45);
+            margin-bottom: .45rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: .75rem 1rem;
+            background: rgba(255,255,255,.06);
+            border: 1.5px solid rgba(255,255,255,.1);
+            border-radius: 10px;
+            font-size: .9rem;
+            color: var(--blanc);
+            font-family: inherit;
+            transition: all .2s;
+            outline: none;
+        }
+
+        .form-group input::placeholder { color: rgba(255,255,255,.25); }
+
+        .form-group input:focus {
+            border-color: var(--or);
+            background: rgba(201,168,76,.06);
+            box-shadow: 0 0 0 3px rgba(201,168,76,.12);
+        }
+
+        /* Bouton */
+        .btn-login {
+            width: 100%;
+            padding: .85rem;
+            background: var(--or);
+            color: var(--marine);
+            border: none;
+            border-radius: 10px;
+            font-size: .9rem;
+            font-weight: 700;
+            letter-spacing: .04em;
+            cursor: pointer;
+            transition: all .2s;
+            margin-top: .5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .5rem;
+        }
+
+        .btn-login:hover {
+            background: var(--or-light);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(201,168,76,.3);
+        }
+
+        .btn-login:active { transform: translateY(0); }
+
+        .btn-login:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Spinner dans bouton */
+        .btn-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(15,28,46,.3);
+            border-top-color: var(--marine);
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Messages */
+        .alert {
+            padding: .75rem 1rem;
+            border-radius: 8px;
+            font-size: .82rem;
+            margin-bottom: 1rem;
+            display: none;
+            align-items: flex-start;
+            gap: .5rem;
+        }
+
+        .alert.show { display: flex; }
+
+        .alert-error {
+            background: rgba(239,68,68,.12);
+            border: 1px solid rgba(239,68,68,.3);
+            color: #fca5a5;
+        }
+
+        .alert-success {
+            background: rgba(29,185,84,.12);
+            border: 1px solid rgba(29,185,84,.3);
+            color: #6ee7a0;
+        }
+
+        .alert-warning {
+            background: rgba(245,158,11,.12);
+            border: 1px solid rgba(245,158,11,.3);
+            color: #fcd34d;
+        }
+
+        .alert-icon { font-size: 1rem; flex-shrink: 0; margin-top: .05rem; }
+        .alert-text { line-height: 1.5; }
+        .alert-text strong { display: block; margin-bottom: .15rem; }
+
+        /* Rate limit countdown */
+        .rate-countdown {
+            font-size: .78rem;
+            color: rgba(255,255,255,.35);
+            text-align: center;
+            margin-top: .75rem;
+            min-height: 1.2em;
+        }
+
+        /* Comptes disponibles */
+        .accounts-hint {
+            margin-top: 1.5rem;
+            padding-top: 1.25rem;
+            border-top: 1px solid rgba(255,255,255,.08);
+        }
+
+        .accounts-hint p {
+            font-size: .7rem;
+            color: rgba(255,255,255,.3);
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            margin-bottom: .6rem;
+        }
+
+        .account-btn {
+            width: 100%;
+            padding: .5rem .75rem;
+            background: rgba(255,255,255,.04);
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 8px;
+            color: rgba(255,255,255,.6);
+            font-size: .8rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: .4rem;
+            transition: all .2s;
+            font-family: inherit;
+        }
+
+        .account-btn:hover {
+            background: rgba(201,168,76,.08);
+            border-color: rgba(201,168,76,.2);
+            color: var(--or-light);
+        }
+
+        .account-badge {
+            font-size: .65rem;
+            padding: .15rem .45rem;
+            border-radius: 4px;
+            font-weight: 700;
+            letter-spacing: .06em;
+        }
+
+        .badge-admin { background: var(--or); color: var(--marine); }
+        .badge-viewer { background: rgba(255,255,255,.1); color: rgba(255,255,255,.6); }
+
+        /* Tentatives restantes */
+        .attempts-bar {
+            display: flex;
+            gap: 4px;
+            margin-top: .6rem;
+            justify-content: center;
+        }
+
+        .attempt-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.2);
+            transition: background .3s;
+        }
+
+        .attempt-dot.used { background: rgba(239,68,68,.6); }
+        .attempt-dot.ok   { background: rgba(29,185,84,.5); }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+
+    <!-- Logo -->
+    <div class="login-logo">
+        <div class="logo-icon">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                <path d="M14 3 L25 11 L25 25 L3 25 L3 11 Z" fill="#0f1c2e" opacity=".9"/>
+                <rect x="10" y="18" width="8" height="7" fill="#c9a84c"/>
+            </svg>
+        </div>
+        <div class="login-title">Urban Data Explorer</div>
+        <div class="login-subtitle">Paris — Accès sécurisé</div>
+    </div>
+
+    <!-- Alerte générique -->
+    <div class="alert alert-error" id="alert-error">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-text">
+            <strong id="alert-title">Erreur</strong>
+            <span id="alert-msg">Identifiants incorrects</span>
+        </div>
+    </div>
+
+    <div class="alert alert-warning" id="alert-rate">
+        <span class="alert-icon">⏱️</span>
+        <div class="alert-text">
+            <strong>Trop de tentatives</strong>
+            <span id="alert-rate-msg">Quota dépassé. Réessayez dans 60 secondes.</span>
+        </div>
+    </div>
+
+    <div class="alert alert-success" id="alert-success">
+        <span class="alert-icon">✅</span>
+        <div class="alert-text">
+            <strong>Connexion réussie !</strong>
+            <span id="alert-success-msg">Redirection en cours…</span>
+        </div>
+    </div>
+
+    <!-- Formulaire -->
+    <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="form-group">
+            <label for="username">Identifiant</label>
+            <input
+                type="text"
+                id="username"
+                name="username"
+                placeholder="admin ou viewer"
+                autocomplete="username"
+                required
+            />
+        </div>
+
+        <div class="form-group">
+            <label for="password">Mot de passe</label>
+            <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="••••••••"
+                autocomplete="current-password"
+                required
+            />
+        </div>
+
+        <button type="submit" class="btn-login" id="btn-login">
+            <div class="btn-spinner" id="btn-spinner"></div>
+            <span id="btn-text">Se connecter</span>
+        </button>
+    </form>
+
+    <!-- Indicateur de tentatives restantes -->
+    <div class="attempts-bar" id="attempts-bar">
+        <div class="attempt-dot ok" id="dot-1"></div>
+        <div class="attempt-dot ok" id="dot-2"></div>
+        <div class="attempt-dot ok" id="dot-3"></div>
+        <div class="attempt-dot ok" id="dot-4"></div>
+        <div class="attempt-dot ok" id="dot-5"></div>
+    </div>
+    <div class="rate-countdown" id="rate-countdown"></div>
+
+    <!-- Comptes disponibles (aide pour la démo) -->
+    <div class="accounts-hint">
+        <p>Comptes disponibles</p>
+        <button type="button" class="account-btn" onclick="fillAccount('admin','paris2024')">
+            <span>admin</span>
+            <span class="account-badge badge-admin">ADMIN</span>
+        </button>
+        <button type="button" class="account-btn" onclick="fillAccount('viewer','viewer2024')">
+            <span>viewer</span>
+            <span class="account-badge badge-viewer">VIEWER</span>
+        </button>
+    </div>
+
+</div>
+
+<script>
+    const API_URL = 'http://localhost:5000/api/auth/login';
+    let attempts = 0;
+    const MAX_ATTEMPTS = 5;
+    let countdownInterval = null;
+
+    // Pré-remplir les champs avec un compte de démo
+    function fillAccount(username, password) {
+        document.getElementById('username').value = username;
+        document.getElementById('password').value = password;
+        document.getElementById('username').focus();
+    }
+
+    // Mettre à jour les points indicateurs de tentatives
+    function updateAttemptDots() {
+        for (let i = 1; i <= MAX_ATTEMPTS; i++) {
+            const dot = document.getElementById(`dot-${i}`);
+            if (!dot) continue;
+            dot.className = 'attempt-dot';
+            if (i <= attempts) dot.classList.add('used');
+            else dot.classList.add('ok');
+        }
+    }
+
+    // Démarrer le compte à rebours de rate limiting
+    function startCountdown(seconds) {
+        let remaining = seconds;
+        const el = document.getElementById('rate-countdown');
+
+        if (countdownInterval) clearInterval(countdownInterval);
+
+        const update = () => {
+            if (remaining <= 0) {
+                clearInterval(countdownInterval);
+                el.textContent = '';
+                document.getElementById('btn-login').disabled = false;
+                document.getElementById('btn-text').textContent = 'Se connecter';
+                document.getElementById('alert-rate').classList.remove('show');
+                attempts = 0;
+                updateAttemptDots();
+                return;
+            }
+            el.textContent = `⏳ Réessayez dans ${remaining}s`;
+            remaining--;
+        };
+
+        update();
+        countdownInterval = setInterval(update, 1000);
+    }
+
+    // Afficher une alerte
+    function showAlert(type, title, msg) {
+        document.getElementById('alert-error').classList.remove('show');
+        document.getElementById('alert-rate').classList.remove('show');
+        document.getElementById('alert-success').classList.remove('show');
+
+        if (type === 'error') {
+            document.getElementById('alert-title').textContent = title;
+            document.getElementById('alert-msg').textContent = msg;
+            document.getElementById('alert-error').classList.add('show');
+        } else if (type === 'rate') {
+            document.getElementById('alert-rate-msg').textContent = msg;
+            document.getElementById('alert-rate').classList.add('show');
+        } else if (type === 'success') {
+            document.getElementById('alert-success-msg').textContent = msg;
+            document.getElementById('alert-success').classList.add('show');
+        }
+    }
+
+    // Gestion du login
+    async function handleLogin(event) {
+        event.preventDefault();
+
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        const btn = document.getElementById('btn-login');
+        const spinner = document.getElementById('btn-spinner');
+        const btnText = document.getElementById('btn-text');
+
+        // UI : chargement
+        btn.disabled = true;
+        spinner.style.display = 'block';
+        btnText.textContent = 'Connexion…';
+
+        // Masquer les alertes précédentes
+        document.getElementById('alert-error').classList.remove('show');
+        document.getElementById('alert-rate').classList.remove('show');
+        document.getElementById('alert-success').classList.remove('show');
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            const json = await response.json();
+
+            // ── 429 : Rate limiting déclenché ──────────────────
+            if (response.status === 429) {
+                attempts = MAX_ATTEMPTS;
+                updateAttemptDots();
+
+                const retryMsg = json?.error?.retry_after || 'Réessayez dans 60 secondes';
+                showAlert('rate', 'Trop de tentatives', retryMsg);
+                startCountdown(60);
+
+                btnText.textContent = 'Bloqué temporairement';
+                spinner.style.display = 'none';
+                return;
+            }
+
+            // ── 401 : Mauvais identifiants ─────────────────────
+            if (response.status === 401) {
+                attempts++;
+                updateAttemptDots();
+
+                const remaining = MAX_ATTEMPTS - attempts;
+                if (remaining > 0) {
+                    showAlert('error', 'Identifiants incorrects',
+                        `Nom d'utilisateur ou mot de passe invalide. ${remaining} tentative${remaining > 1 ? 's' : ''} restante${remaining > 1 ? 's' : ''}.`
+                    );
+                    btn.disabled = false;
+                } else {
+                    showAlert('rate', 'Compte temporairement bloqué',
+                        'Trop de tentatives échouées. Attendez 60 secondes.'
+                    );
+                    startCountdown(60);
+                    btnText.textContent = 'Bloqué temporairement';
+                }
+
+                spinner.style.display = 'none';
+                return;
+            }
+
+            // ── Autre erreur ───────────────────────────────────
+            if (!response.ok || !json.success) {
+                showAlert('error', 'Erreur serveur',
+                    json?.error?.message || `Erreur ${response.status}`
+                );
+                btn.disabled = false;
+                spinner.style.display = 'none';
+                btnText.textContent = 'Se connecter';
+                return;
+            }
+
+            // ── ✅ Succès ──────────────────────────────────────
+            const token = json.data.token;
+            const user = json.data.user;
+
+            // Stocker le token en sessionStorage (session uniquement, pas localStorage)
+            sessionStorage.setItem('ude_token', token);
+            sessionStorage.setItem('ude_user', JSON.stringify(user));
+
+            showAlert('success', 'Connexion réussie !',
+                `Bienvenue ${user.name} — redirection vers le dashboard…`
+            );
+
+            btnText.textContent = '✓ Connecté';
+            spinner.style.display = 'none';
+
+            // Redirection vers le dashboard après 1.2s
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1200);
+
+        } catch (err) {
+            showAlert('error', 'Impossible de contacter l\'API',
+                'Vérifiez que le serveur Flask tourne sur localhost:5000'
+            );
+            btn.disabled = false;
+            spinner.style.display = 'none';
+            btnText.textContent = 'Se connecter';
+        }
+    }
+
+    // Focus auto sur le champ username
+    document.getElementById('username').focus();
+</script>
+</body>
+</html>

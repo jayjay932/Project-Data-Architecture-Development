@@ -651,3 +651,233 @@ l'exploitation des 2 workers disponibles.
 **Conseil clé :** pour chaque bloc, suivre la structure *"Voici ce qu'on a fait →
 voici pourquoi ce choix plutôt qu'un autre → voici la preuve que ça marche"*.
 Le jury valorise la **justification du choix** bien plus que la liste des outils.
+
+
+
+
+
+
+
+
+
+
+## Indicateurs composites calculés
+
+Le fichier gold final contient plusieurs indicateurs composites permettant de comparer les arrondissements de Paris sur une échelle commune.
+Ces indicateurs sont calculés à partir des données immobilières, démographiques, sociales et de transport agrégées par arrondissement.
+
+### Principe de normalisation
+
+Avant de calculer les indices, certaines variables sont normalisées sur une échelle de **0 à 10** afin de pouvoir comparer des grandeurs différentes entre elles.
+
+La normalisation utilisée est une normalisation min-max :
+
+```python
+score = (valeur - minimum) / (maximum - minimum) * 10
+```
+
+Ainsi :
+
+* `0` correspond à la valeur la plus faible observée parmi les 20 arrondissements ;
+* `10` correspond à la valeur la plus forte observée ;
+* les autres valeurs sont positionnées proportionnellement entre 0 et 10.
+
+Dans certains cas, le score est inversé avec `inverse=True`.
+Cela signifie qu’une valeur faible devient favorable.
+
+Exemple :
+
+```python
+normaliser(ratio_effort_achat, inverse=True)
+```
+
+Dans ce cas, plus le ratio d’effort d’achat est faible, meilleur est le score d’accessibilité.
+
+---
+
+## 1. Ratio d’effort d’achat
+
+Le `ratio_effort_achat` mesure le nombre d’années de revenu médian nécessaires pour acheter un logement de **50 m²** dans un arrondissement.
+
+Formule :
+
+```python
+ratio_effort_achat = prix_m2_median_2024 * 50 / revenu_median
+```
+
+Interprétation :
+
+* un ratio faible signifie que l’achat est plus accessible ;
+* un ratio élevé signifie que l’achat est plus difficile.
+
+Exemple :
+
+```text
+Prix au m² : 10 000 €
+Surface cible : 50 m²
+Prix estimé du bien : 500 000 €
+Revenu médian : 25 000 €
+
+Ratio effort achat = 500 000 / 25 000 = 20 ans
+```
+
+Ce ratio sert ensuite à calculer l’indice d’accessibilité.
+
+---
+
+## 2. Indice d’accessibilité
+
+L’`indice_accessibilite` mesure la facilité d’accès à la propriété dans un arrondissement.
+
+Il est calculé à partir du `ratio_effort_achat`, puis normalisé sur 10 avec inversion du score.
+
+Formule :
+
+```python
+indice_accessibilite = normaliser(ratio_effort_achat, inverse=True)
+```
+
+Interprétation :
+
+* `10` = arrondissement le plus accessible financièrement ;
+* `0` = arrondissement le moins accessible ;
+* plus le ratio d’effort d’achat est faible, plus l’indice est élevé.
+
+Cet indice permet donc d’identifier les arrondissements où le prix immobilier est plus cohérent avec le niveau de revenu médian.
+
+---
+
+## 3. Indice de tension sociale
+
+L’`indice_tension_sociale` mesure la pression sociale liée au marché immobilier.
+
+Il combine deux dimensions :
+
+* le niveau des prix immobiliers ;
+* la part de logements sociaux.
+
+Formule :
+
+```python
+indice_tension_sociale = (
+    normaliser(prix_m2_median_2024)
+    +
+    normaliser(part_logements_sociaux_apur_pct, inverse=True)
+) / 2
+```
+
+Logique de calcul :
+
+* un prix au m² élevé augmente la tension sociale ;
+* une faible part de logements sociaux augmente aussi la tension sociale.
+
+Interprétation :
+
+* `10` = forte tension sociale ;
+* `0` = faible tension sociale.
+
+Un arrondissement avec des prix élevés et peu de logements sociaux aura donc un score de tension sociale plus important.
+
+---
+
+## 4. Indice d’attractivité
+
+L’`indice_attractivite` mesure l’attractivité urbaine d’un arrondissement.
+
+Il repose sur trois variables :
+
+* le trafic total du métro ;
+* le nombre de lignes de métro ;
+* le prix médian au m².
+
+Formule :
+
+```python
+indice_attractivite = (
+    normaliser(trafic_total_metro) * 0.4
+    +
+    normaliser(nb_lignes_metro) * 0.3
+    +
+    normaliser(prix_m2_median_2024) * 0.3
+)
+```
+
+Pondération :
+
+```text
+40 % : trafic total métro
+30 % : nombre de lignes métro
+30 % : prix médian au m²
+```
+
+Interprétation :
+
+* `10` = arrondissement très attractif ;
+* `0` = arrondissement moins attractif selon les critères retenus.
+
+L’idée est qu’un arrondissement bien desservi, très fréquenté et valorisé sur le marché immobilier est considéré comme plus attractif.
+
+---
+
+## 5. Indice de pression immobilière
+
+L’`indice_pression_immo` mesure la pression ou l’activité du marché immobilier local.
+
+Il combine trois variables :
+
+* l’évolution du prix au m² entre 2023 et 2024 ;
+* le nombre de ventes en 2024 ;
+* la part de logements T1.
+
+Formule :
+
+```python
+indice_pression_immo = (
+    normaliser(evolution_prix_m2_2023_2024_pct, inverse=True) * 0.4
+    +
+    normaliser(nb_ventes_2024) * 0.3
+    +
+    normaliser(pct_T1_2024) * 0.3
+)
+```
+
+Pondération :
+
+```text
+40 % : évolution du prix au m² 2023-2024, inversée
+30 % : volume de ventes en 2024
+30 % : part de T1
+```
+
+Dans cette logique, une pression immobilière élevée correspond à :
+
+* un marché avec beaucoup de transactions ;
+* une forte présence de petits logements ;
+* une évolution des prix plus faible ou en baisse, ce qui peut signaler une zone active mais sous tension ou en réajustement.
+
+Interprétation :
+
+* `10` = forte pression immobilière ;
+* `0` = pression immobilière plus faible.
+
+---
+
+## Résumé des indicateurs
+
+| Indicateur               | Variables utilisées                   | Interprétation                                                  |
+| ------------------------ | ------------------------------------- | --------------------------------------------------------------- |
+| `ratio_effort_achat`     | Prix/m² 2024, revenu médian           | Nombre d’années de revenu nécessaires pour acheter 50 m²        |
+| `indice_accessibilite`   | Ratio d’effort d’achat inversé        | Plus le score est élevé, plus l’achat est accessible            |
+| `indice_tension_sociale` | Prix/m², part de logements sociaux    | Plus le score est élevé, plus la tension sociale est forte      |
+| `indice_attractivite`    | Trafic métro, lignes métro, prix/m²   | Plus le score est élevé, plus l’arrondissement est attractif    |
+| `indice_pression_immo`   | Évolution prix/m², ventes, part de T1 | Plus le score est élevé, plus la pression immobilière est forte |
+
+---
+
+## Remarque méthodologique
+
+Les indices sont des indicateurs comparatifs construits à partir des données disponibles.
+Ils ne donnent pas une vérité absolue, mais permettent de comparer les arrondissements entre eux selon une grille commune.
+
+Les scores sont calculés uniquement à l’échelle des 20 arrondissements parisiens.
+Un score élevé signifie donc que l’arrondissement se situe parmi les plus hauts de Paris sur les critères considérés.
