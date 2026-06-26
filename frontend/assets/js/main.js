@@ -1,155 +1,217 @@
 /**
- * Point d'entrée principal de l'application
+ * Point d'entrée — Dashboard exact UI
+ * Version propre et stable.
  */
 
-// Variables globales
 let api, map, ui, comparateur;
 let currentMetric = 'prix_m2_median_2024';
 let currentYear = '2024';
 
-/**
- * Initialise l'application
- */
 async function initApp() {
     try {
-        log('🚀 Démarrage de l\'application...', 'info');
-        
-        // Initialiser l'API
+        log('🚀 Démarrage Urban Data Explorer...', 'info');
+
         api = new APIClient('http://localhost:5000/api');
-        
-        // Vérifier la connexion
+
         showLoading();
+
         const connected = await api.checkConnection();
-        
+
         if (!connected) {
             hideLoading();
-            alert('❌ Impossible de se connecter à l\'API backend.\n\nVérifiez que le serveur est démarré sur http://localhost:5000');
+            alert('Impossible de se connecter à l’API backend. Vérifie que le serveur tourne sur http://localhost:5000');
             return;
         }
-        
-        // Initialiser l'UI
+
         ui = new UI(api);
-        
-        // Initialiser le comparateur
+
         comparateur = new Comparateur(api, ui);
         comparateur.init();
-        
-        // Initialiser la carte
+
         map = new ParisMap('map', api);
         await map.init();
-        
-        hideLoading();
-        
-        // Mettre à jour la légende initiale
-        map.updateLegend();
-        
-        // Mettre à jour les stats initiales
+forceUpdateKpiFromMap();
+        setupEventListeners();
+
+        await ui.updateKpiCards();
         await ui.updateStatsPanel(currentMetric);
-        
-        // Initialiser les écouteurs
-        initEventListeners();
-        
-        log('✅ Application prête !', 'success');
-        
+
+       if (map && typeof map.selectArrondissement === 'function') {
+    map.selectArrondissement(12);
+}
+
+await ui.showDetailPanel(12);
+
+        hideLoading();
+
+        log('✅ Application prête', 'success');
     } catch (error) {
         hideLoading();
         log(`❌ Erreur initialisation: ${error.message}`, 'error');
-        alert(`Erreur d'initialisation:\n${error.message}\n\nVérifiez la console (F12) pour plus de détails.`);
+        alert(`Erreur au démarrage :\n${error.message}`);
     }
 }
 
-/**
- * Initialise tous les écouteurs d'événements
- */
-function initEventListeners() {
-    // Bouton de rafraîchissement
+function setupEventListeners() {
     const refreshBtn = document.getElementById('refresh-btn');
+    const metricSelect = document.getElementById('metric-select');
+    const yearSelect = document.getElementById('year-select');
+
     if (refreshBtn) {
         refreshBtn.addEventListener('click', handleRefresh);
     }
-    
-    // Sélection de métrique
-    const metricSelect = document.getElementById('metric-select');
+
     if (metricSelect) {
-        metricSelect.addEventListener('change', (e) => {
+        metricSelect.addEventListener('change', async (e) => {
             currentMetric = e.target.value;
-            ui.updateStatsPanel(currentMetric);
+            await handleRefresh(false);
         });
     }
-    
-    // Sélection d'année
-    const yearSelect = document.getElementById('year-select');
+
     if (yearSelect) {
-        yearSelect.addEventListener('change', (e) => {
+        yearSelect.addEventListener('change', async (e) => {
             currentYear = e.target.value;
+            await handleRefresh(false);
         });
     }
-    
-    // Clic sur arrondissement
-    window.addEventListener('arrondissement-selected', (e) => {
+
+    window.addEventListener('arrondissement-selected', async (e) => {
         const numero = e.detail.numero;
-        ui.showDetailPanel(numero);
+        await ui.showDetailPanel(numero);
     });
-    
-    // Resize de la fenêtre
+
     window.addEventListener('resize', debounce(() => {
-        if (map && map.map) {
-            map.map.resize();
-        }
-    }, 250));
-    
-    log('✅ Écouteurs d\'événements initialisés', 'success');
+        if (map && map.map) map.map.resize();
+    }, 180));
 }
 
-/**
- * Gère le rafraîchissement de la carte
- */
-async function handleRefresh() {
+async function handleRefresh(withLoader = true) {
     try {
-        showLoading();
-        
-        log(`🔄 Rafraîchissement: ${currentMetric}, ${currentYear}`, 'info');
-        
-        // Mettre à jour la carte
+        if (withLoader) showLoading();
+
         await map.updateMetric(currentMetric, currentYear);
-        
-        // Mettre à jour les stats
         await ui.updateStatsPanel(currentMetric);
-        
-        hideLoading();
-        
-        log('✅ Carte rafraîchie', 'success');
-        
+
+        if (ui.currentArrondissement) {
+            await ui.showDetailPanel(ui.currentArrondissement);
+        }
+
+        if (withLoader) hideLoading();
     } catch (error) {
-        hideLoading();
+        if (withLoader) hideLoading();
         log(`❌ Erreur rafraîchissement: ${error.message}`, 'error');
-        alert(`Erreur lors du rafraîchissement:\n${error.message}`);
     }
 }
 
-/**
- * Gestion des erreurs globales
- */
 window.addEventListener('error', (event) => {
-    log(`❌ Erreur globale: ${event.error}`, 'error');
-    console.error('Stack trace:', event.error);
+    log(`❌ Erreur globale: ${event.error || event.message}`, 'error');
 });
 
 window.addEventListener('unhandledrejection', (event) => {
     log(`❌ Promise rejetée: ${event.reason}`, 'error');
-    console.error('Raison:', event.reason);
 });
 
-/**
- * Démarrer l'application quand le DOM est prêt
- */
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initApp);
 } else {
     initApp();
 }
 
-// Logs de bienvenue
-console.log('%c🏠 Dashboard Immobilier Paris', 'font-size: 20px; font-weight: bold; color: #667eea;');
-console.log('%cVersion 1.0 - Prêt à l\'emploi', 'color: #22c55e;');
-console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color: #667eea;');
+console.log(
+    '%cUrban Data Explorer — Clean Final',
+    'font-size: 20px; font-weight: bold; color: #5b6df7;'
+);function forceUpdateKpiFromMap() {
+    if (!map || !map.data || !(map.data instanceof Map)) {
+        console.warn('❌ map.data indisponible pour les KPI');
+        return;
+    }
+
+    const rows = Array.from(map.data.values())
+        .map(item => {
+            if (!item) return null;
+            if (item.data && typeof item.data === 'object') return item.data;
+            if (item.arrondissement && typeof item.arrondissement === 'object') return item.arrondissement;
+            return item;
+        })
+        .filter(Boolean);
+
+    console.log('✅ KPI FORCE rows:', rows);
+
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+
+    const num = (value) => {
+        if (value === null || value === undefined || value === '' || value === 'N/A') return null;
+
+        const n = Number(
+            String(value)
+                .replace(/\s/g, '')
+                .replace(',', '.')
+                .replace('€', '')
+                .replace('%', '')
+        );
+
+        return Number.isFinite(n) ? n : null;
+    };
+
+    const firstNumber = (row, keys) => {
+        for (const key of keys) {
+            const value = num(row[key]);
+            if (value !== null) return value;
+        }
+        return 0;
+    };
+
+    const formatShort = (value) => {
+        if (value >= 1000000) {
+            return `${(value / 1000000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}M`;
+        }
+
+        if (value >= 1000) {
+            return `${(value / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}k`;
+        }
+
+        return Math.round(value).toLocaleString('fr-FR');
+    };
+
+    const formatPriceM2 = (value) => {
+        return `${Math.round(value).toLocaleString('fr-FR')} €/m²`;
+    };
+
+    const logements = rows.reduce((sum, row) => {
+        return sum + firstNumber(row, [
+            'nb_logements_2022',
+            'logements_2022',
+            'nb_logements',
+            'nb_appartements_2024',
+            'nb_appartement_2024'
+        ]);
+    }, 0);
+
+    const prices = rows
+        .map(row => firstNumber(row, [
+            'prix_m2_median_2024',
+            'prix_m2_moyen_2024',
+            'prix_m2_median',
+            'prix_m2'
+        ]))
+        .filter(value => value > 0);
+
+    setText('kpi-arrondissements', rows.length || 20);
+
+    if (logements > 0) {
+        setText('kpi-logements', formatShort(logements));
+    }
+
+    if (prices.length > 0) {
+        const avg = prices.reduce((sum, value) => sum + value, 0) / prices.length;
+        setText('kpi-marche', formatPriceM2(avg));
+    }
+
+    console.log('✅ KPI FORCE OK:', {
+        logements,
+        prix_m2_moyen: prices.length ? prices.reduce((s, v) => s + v, 0) / prices.length : null
+    });
+}

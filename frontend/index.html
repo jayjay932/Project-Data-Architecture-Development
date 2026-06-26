@@ -1,218 +1,266 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Urban Data Explorer - Paris</title>
-    
-    <!-- MapLibre GL CSS -->
+
     <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
-    
-    <!-- Styles personnalisés -->
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/style.css?v=clean-final-1" />
 </head>
 <body>
-    <!-- En-tête -->
-    <header class="header">
-        <h1>🏙️ Urban Data Explorer — Paris</h1>
-        <p>Explorer, comprendre et comparer les dynamiques du logement au cœur de Paris</p>
-    </header>
-
-    <!-- Panneau de contrôle -->
-    <aside class="control-panel">
-        <h2>Filtres & Métriques</h2>
-        
-        <!-- Sélection de la métrique -->
-        <div class="control-group">
-            <label for="metric-select">Métrique à afficher</label>
-            <select id="metric-select">
-
-                <optgroup label="💰 Prix & Marché">
-                    <option value="prix_m2_median_2024">Prix/m² médian 2024</option>
-                    <option value="prix_median_2024">Prix médian 2024</option>
-                    <option value="evolution_prix_2020_2024_pct">Évolution prix 2020-2024</option>
-                    <option value="evolution_prix_m2_2023_2024_pct">Évolution prix/m² 2023-2024</option>
-                    <option value="tendance_prix_m2">Tendance du marché</option>
-                    <option value="nb_ventes_2024">Nombre de ventes 2024</option>
-                    <option value="volatilite_prix_m2">Volatilité prix/m²</option>
-                </optgroup>
-
-                <optgroup label="🏠 Logements">
-                    <option value="nb_appartements_2024">Nombre d'appartements 2024</option>
-                    <option value="pct_T1_2024">Part de T1 (studios)</option>
-                    <option value="pct_T2_2024">Part de T2</option>
-                    <option value="pct_T3_2024">Part de T3</option>
-                    <option value="pct_T4_2024">Part de T4</option>
-                    <option value="pct_T5plus_2024">Part de T5+</option>
-                    <option value="nb_pieces_moyen">Nb pièces moyen</option>
-                </optgroup>
-
-                <optgroup label="🏢 Logements Sociaux">
-                    <option value="nb_logements_sociaux_apur">Logements sociaux (nb APUR)</option>
-                    <option value="part_logements_sociaux_apur_pct">Logements sociaux (% APUR)</option>
-                </optgroup>
-
-                <optgroup label="🚇 Transport">
-                    <option value="nb_stations_metro">Nombre de stations métro</option>
-                    <option value="trafic_total_metro">Trafic métro total</option>
-                    <option value="nb_lignes_metro">Nombre de lignes métro</option>
-                    <option value="nb_lignes_rer">Nombre de lignes RER</option>
-                </optgroup>
-
-                <optgroup label="🌫️ Qualité de l'air">
-                    <option value="no2_moyen">NO₂ moyen (µg/m³)</option>
-                    <option value="pm10_moyen">PM10 moyen (µg/m³)</option>
-                    <option value="o3_moyen">O₃ moyen (µg/m³)</option>
-                </optgroup>
-
-                <optgroup label="👥 Démographie">
-                    <option value="population_2022">Population 2022</option>
-                    <option value="densite_pop_km2">Densité de population</option>
-                    <option value="revenu_median">Revenu médian (€/an)</option>
-                </optgroup>
-
-                <optgroup label="📊 Indicateurs composites">
-                    <option value="indice_accessibilite">Indice d'accessibilité</option>
-                    <option value="indice_tension_sociale">Indice de tension sociale</option>
-                    <option value="indice_attractivite">Indice d'attractivité</option>
-                    <option value="indice_pression_immo">Indice de pression immobilière</option>
-                    <option value="ratio_effort_achat">Effort d'achat (années)</option>
-                </optgroup>
-
-            </select>
-        </div>
-
-        <!-- Sélection de l'année -->
-        <div class="control-group">
-            <label for="year-select">Année de référence</label>
-            <select id="year-select">
-                <option value="2025">2025</option>
-                <option value="2024" selected>2024</option>
-                <option value="2023">2023</option>
-                <option value="2022">2022</option>
-                <option value="2021">2021</option>
-                <option value="2020">2020</option>
-            </select>
-        </div>
-
-        <!-- Bouton de rafraîchissement -->
-        <button id="refresh-btn" class="btn-primary">
-            🔄 Actualiser la carte
-        </button>
-
-        <!-- Statistiques -->
-        <div id="stats-panel" class="stats-panel">
-            <h3>📈 Statistiques Paris</h3>
-            <div id="stats-content">
-                <p>Sélectionnez une métrique...</p>
-            </div>
-        </div>
-
-        <!-- Mode Comparaison -->
-        <div class="comparison-controls">
-            <h3>⚖️ Mode Comparaison</h3>
-            <div class="comparison-selects">
-                <div class="comparison-select-group">
-                    <label for="select-arr-a">Arrondissement A</label>
-                    <select id="select-arr-a">
-                        <option value="">Sélectionner...</option>
-                        <option value="1">1er</option>
-                        <option value="2">2e</option>
-                        <option value="3">3e</option>
-                        <option value="4">4e</option>
-                        <option value="5">5e</option>
-                        <option value="6">6e</option>
-                        <option value="7">7e</option>
-                        <option value="8">8e</option>
-                        <option value="9">9e</option>
-                        <option value="10">10e</option>
-                        <option value="11">11e</option>
-                        <option value="12">12e</option>
-                        <option value="13">13e</option>
-                        <option value="14">14e</option>
-                        <option value="15">15e</option>
-                        <option value="16">16e</option>
-                        <option value="17">17e</option>
-                        <option value="18">18e</option>
-                        <option value="19">19e</option>
-                        <option value="20">20e</option>
-                    </select>
+    <div class="app-shell">
+        <header class="topbar">
+            <div class="brand-block">
+                <div class="brand-logo" aria-hidden="true">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                        <path d="M4 20V8.8C4 8.3 4.26 7.84 4.68 7.58L11.18 3.6C11.68 3.3 12.32 3.3 12.82 3.6L19.32 7.58C19.74 7.84 20 8.3 20 8.8V20" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+                        <path d="M8 20V11h8v9" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+                        <path d="M10.5 14h3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+                    </svg>
                 </div>
-                <div class="comparison-select-group">
-                    <label for="select-arr-b">Arrondissement B</label>
-                    <select id="select-arr-b">
-                        <option value="">Sélectionner...</option>
-                        <option value="1">1er</option>
-                        <option value="2">2e</option>
-                        <option value="3">3e</option>
-                        <option value="4">4e</option>
-                        <option value="5">5e</option>
-                        <option value="6">6e</option>
-                        <option value="7">7e</option>
-                        <option value="8">8e</option>
-                        <option value="9">9e</option>
-                        <option value="10">10e</option>
-                        <option value="11">11e</option>
-                        <option value="12">12e</option>
-                        <option value="13">13e</option>
-                        <option value="14">14e</option>
-                        <option value="15">15e</option>
-                        <option value="16">16e</option>
-                        <option value="17">17e</option>
-                        <option value="18">18e</option>
-                        <option value="19">19e</option>
-                        <option value="20">20e</option>
-                    </select>
+                <div>
+                    <h1>Urban Data Explorer</h1>
+                    <p>Paris · Immobilier &amp; Données Urbaines</p>
                 </div>
             </div>
-            <button id="btn-comparer" class="btn-primary">
-                ⚖️ Comparer
-            </button>
-        </div>
-    </aside>
 
-    <!-- Carte principale -->
-    <main class="map-container">
-        <div id="map"></div>
-        
-        <!-- Légende -->
-        <div id="legend" class="legend">
-            <h4 id="legend-title">Prix/m² médian 2024</h4>
-            <div id="legend-scale" class="legend-scale"></div>
-        </div>
-        
-        <!-- Tooltip -->
-        <div id="tooltip" class="tooltip"></div>
-        
-        <!-- Loading indicator -->
-        <div id="loading" class="loading hidden">
-            <div class="spinner"></div>
-            <p>Chargement...</p>
-        </div>
-    </main>
+            <nav class="top-actions" aria-label="Actions principales">
+                <button class="ghost-action" type="button">
+                    <span>📖</span> Méthodologie
+                </button>
+                <button class="ghost-action" type="button">
+                    <span>↓</span> Exporter
+                </button>
+                <button class="share-action" type="button">
+                    <span>↗</span> Partager <span class="chevron">⌄</span>
+                </button>
+            </nav>
+        </header>
 
-    <!-- Panneau de détails -->
-    <aside id="detail-panel" class="detail-panel hidden">
-        <button class="close-btn" onclick="closeDetailPanel()">×</button>
-        <div id="detail-content"></div>
-    </aside>
+        <section class="kpi-row" aria-label="Indicateurs clés">
+            <article class="kpi-card">
+                <div class="kpi-icon purple">▦</div>
+                <div class="kpi-copy">
+                    <span>Arrondissements</span>
+                    <strong id="kpi-arrondissements">20</strong>
+                    <small>Total</small>
+                </div>
+                <svg class="sparkline" viewBox="0 0 120 40" aria-hidden="true">
+                    <polyline points="0,30 15,22 32,26 50,14 70,21 88,19 104,29 120,12"/>
+                </svg>
+            </article>
 
-    <!-- Panneau de comparaison -->
+            <article class="kpi-card">
+                <div class="kpi-icon blue">👥</div>
+                <div class="kpi-copy">
+                    <span>Population</span>
+                    <strong id="kpi-population">—</strong>
+                    <small>Habitants</small>
+                </div>
+                <div class="kpi-badge neutral">API</div>
+                <svg class="sparkline" viewBox="0 0 120 40" aria-hidden="true">
+                    <polyline points="0,28 16,18 32,20 48,9 66,15 84,23 102,16 120,22"/>
+                </svg>
+            </article>
+
+            <article class="kpi-card">
+                <div class="kpi-icon cyan">⌂</div>
+                <div class="kpi-copy">
+                    <span>Logements</span>
+                    <strong id="kpi-logements">—</strong>
+                    <small>Total</small>
+                </div>
+                <div class="kpi-badge neutral">API</div>
+                <svg class="sparkline green-line" viewBox="0 0 120 40" aria-hidden="true">
+                    <polyline points="0,30 16,24 33,24 50,13 67,24 84,25 99,15 120,22"/>
+                </svg>
+            </article>
+
+            <article class="kpi-card">
+                <div class="kpi-icon violet">↗</div>
+                <div class="kpi-copy">
+                    <span>Prix/m² moyen</span>
+                    <strong id="kpi-marche">—</strong>
+                    <small>Global 2024</small>
+                </div>
+                <div class="market-pill">API</div>
+                <svg class="sparkline" viewBox="0 0 120 40" aria-hidden="true">
+                    <polyline points="0,29 16,24 32,14 48,20 64,11 80,21 96,17 120,25"/>
+                </svg>
+            </article>
+        </section>
+
+        <section class="dashboard-grid">
+            <aside class="control-panel">
+                <div class="panel-card filters-card">
+                    <div class="control-group">
+                        <label for="metric-select">Indicateur</label>
+                        <div class="select-shell">
+                            <span class="select-icon">▣</span>
+                            <select id="metric-select">
+                                <optgroup label="💰 Prix & Marché">
+                                    <option value="prix_m2_median_2024">Prix/m² médian</option>
+                                    <option value="prix_median_2024">Prix médian</option>
+                                    <option value="nb_ventes_2024">Nombre de ventes</option>
+                                </optgroup>
+
+                                <optgroup label="🏠 Logements">
+                                    <option value="nb_appartements_2024">Nombre d'appartements</option>
+                                </optgroup>
+
+                                <optgroup label="🏢 Logements sociaux">
+                                    <option value="nb_logements_sociaux_apur">Logements sociaux (nb APUR)</option>
+                                    <option value="part_logements_sociaux_apur_pct">Logements sociaux (% APUR)</option>
+                                </optgroup>
+
+                                <optgroup label="🚇 Transport">
+                                    <option value="nb_stations_metro">Nombre de stations métro</option>
+                                    <option value="trafic_total_metro">Trafic métro total</option>
+                                    <option value="nb_lignes_metro">Nombre de lignes métro</option>
+                                    <option value="nb_lignes_rer">Nombre de lignes RER</option>
+                                </optgroup>
+
+                                <optgroup label="👥 Démographie & revenus">
+                                    <option value="population_2022">Population 2022</option>
+                                    <option value="densite_pop_km2">Densité de population</option>
+                                    <option value="revenu_median">Revenu médian</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="year-select">Année de référence</label>
+                        <div class="select-shell">
+                            <span class="select-icon">▤</span>
+                            <select id="year-select">
+                                <option value="2025">2025</option>
+                                <option value="2024" selected>2024</option>
+                                <option value="2023">2023</option>
+                                <option value="2022">2022</option>
+                                <option value="2021">2021</option>
+                                <option value="2020">2020</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="comparison-controls">
+                        <h3>Comparer</h3>
+                        <div class="comparison-selects">
+                            <div class="comparison-select-group">
+                                <label for="select-arr-a">Arrondissement A</label>
+                                <div class="select-shell thin">
+                                    <select id="select-arr-a">
+                                        <option value="">Sélectionner un arrondissement</option>
+                                        <option value="1">1er</option>
+                                        <option value="2">2e</option>
+                                        <option value="3">3e</option>
+                                        <option value="4">4e</option>
+                                        <option value="5">5e</option>
+                                        <option value="6">6e</option>
+                                        <option value="7">7e</option>
+                                        <option value="8">8e</option>
+                                        <option value="9">9e</option>
+                                        <option value="10">10e</option>
+                                        <option value="11">11e</option>
+                                        <option value="12">12e</option>
+                                        <option value="13">13e</option>
+                                        <option value="14">14e</option>
+                                        <option value="15">15e</option>
+                                        <option value="16">16e</option>
+                                        <option value="17">17e</option>
+                                        <option value="18">18e</option>
+                                        <option value="19">19e</option>
+                                        <option value="20">20e</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="comparison-select-group">
+                                <label for="select-arr-b">Arrondissement B</label>
+                                <div class="select-shell thin">
+                                    <select id="select-arr-b">
+                                        <option value="">Sélectionner un arrondissement</option>
+                                        <option value="1">1er</option>
+                                        <option value="2">2e</option>
+                                        <option value="3">3e</option>
+                                        <option value="4">4e</option>
+                                        <option value="5">5e</option>
+                                        <option value="6">6e</option>
+                                        <option value="7">7e</option>
+                                        <option value="8">8e</option>
+                                        <option value="9">9e</option>
+                                        <option value="10">10e</option>
+                                        <option value="11">11e</option>
+                                        <option value="12">12e</option>
+                                        <option value="13">13e</option>
+                                        <option value="14">14e</option>
+                                        <option value="15">15e</option>
+                                        <option value="16">16e</option>
+                                        <option value="17">17e</option>
+                                        <option value="18">18e</option>
+                                        <option value="19">19e</option>
+                                        <option value="20">20e</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="refresh-btn" class="btn-primary" type="button">↻ Actualiser la carte</button>
+                    <button id="btn-comparer" class="btn-secondary" type="button">Comparer les deux zones</button>
+                </div>
+
+                <div id="stats-panel" class="panel-card about-card">
+                    <h3>ⓘ À propos de cet indicateur</h3>
+                    <div id="stats-content">
+                        <p>Sélectionnez un indicateur pour afficher les statistiques globales.</p>
+                        <span>Source : API Urban Data Explorer</span>
+                    </div>
+                </div>
+            </aside>
+
+            <main class="map-card">
+                <div id="map"></div>
+
+                <button class="map-plan" type="button">▧ <strong>Plan</strong></button>
+
+                <div id="legend" class="legend">
+                    <h4 id="legend-title">Prix/m² médian 2024</h4>
+                    <div id="legend-scale" class="legend-scale"></div>
+                </div>
+
+                <div id="tooltip" class="tooltip"></div>
+
+                <div id="loading" class="loading hidden">
+                    <div class="spinner"></div>
+                    <p>Chargement des données...</p>
+                </div>
+            </main>
+
+            <aside id="detail-panel" class="detail-panel">
+                <div id="detail-content" class="detail-content">
+                    <div class="empty-detail">Sélectionnez un arrondissement sur la carte</div>
+                </div>
+            </aside>
+        </section>
+    </div>
+
     <div id="comparison-panel" class="comparison-panel hidden">
         <div id="comparison-content" style="position: relative;">
-            <button id="btn-fermer-comparaison">×</button>
+            <button id="btn-fermer-comparaison" type="button">×</button>
         </div>
     </div>
 
-    <!-- MapLibre GL JS -->
     <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-    
-    <!-- Scripts de l'application -->
-    <script src="assets/js/utils.js"></script>
-    <script src="assets/js/api.js"></script>
-    <script src="assets/js/map.js"></script>
-    <script src="assets/js/ui.js"></script>
-    <script src="assets/js/comparaison.js"></script>
-    <script src="assets/js/main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+    <script src="assets/js/utils.js?v=clean-final-1"></script>
+    <script src="assets/js/api.js?v=clean-final-1"></script>
+    <script src="assets/js/map.js?v=map-dom-labels-1"></script>
+   <script src="assets/js/ui.js?v=kpi-fix-1"></script>
+    <script src="assets/js/comparaison.js?v=clean-final-1"></script>
+    <script src="assets/js/main.js?v=clean-final-1"></script>
 </body>
 </html>
