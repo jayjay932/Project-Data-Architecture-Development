@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"name": "projet_data_architecture",
+			"path": ".."
+		},
+		{
+			"name": "frontend",
+			"path": "../../Project-Data-Architecture-Development-dev-jason/Project-Data-Architecture-Development-dev-jason/frontend"
+		}
+	],
+	"settings": {
+		"liveServer.settings.port": 5501,
+		"liveServer.settings.multiRootWorkspaceName": "projet_data_architecture"
+	}
+}

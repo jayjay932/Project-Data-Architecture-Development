@@ -1,2 +1,40 @@
-pandas
+
 openpyxl
+# ══════════════════════════════════════════════════════════
+# Urban Data Explorer — Requirements
+# Installation : pip install -r requirements.txt
+# ══════════════════════════════════════════════════════════
+
+# ── API Flask ─────────────────────────────────────────────
+flask==3.1.2
+flask-cors==4.0.0
+flask-limiter==3.5.0
+
+# ── Authentification JWT ──────────────────────────────────
+PyJWT==2.8.0
+
+# ── Base de données relationnelle (PostgreSQL) ────────────
+sqlalchemy==2.0.30
+psycopg2-binary==2.9.9
+
+# ── Base de données non relationnelle (MongoDB) ───────────
+pymongo==4.7.2
+
+# ── Data pipeline & manipulation de données ───────────────
+pandas==2.2.2
+numpy==1.26.4
+scipy==1.13.0
+openpyxl==3.1.2
+
+# ── Kafka (streaming) ─────────────────────────────────────
+kafka-python==3.0.4
+
+# ── Tests de charge ───────────────────────────────────────
+locust==2.44.4
+requests==2.34.2
+
+# ── Tests de résilience ───────────────────────────────────
+docker==7.1.0
+
+# ── Variables d'environnement ─────────────────────────────
+python-dotenv==1.0.1
